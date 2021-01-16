@@ -1,0 +1,62 @@
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    /* Hide scrollbars */
+}
+
+.buttons {
+    position:absolute;
+    left: 5%;
+    bottom: 5%;
+}
+
+button {
+    padding: 10px 13px;
+    border: 1px solid white;
+    border-radius: 5px;
+    font-family: "Crimson Text", serif;
+    text-align: center;
+    background-color: transparent;
+    opacity: 0.6;
+    cursor: pointer;
+    color: white;
+    margin-right: 14px;
+}
+
+button:hover {
+    opacity: 0.8;
+    transition: 0.3s;
+    text-shadow: 3px 3px 3px rgb(211, 210, 210);
+}
+
+.instructions {
+    color: white;
+    opacity: 0.8;
+    margin-left: 5%;
+    font-family: "Comfortaa", cursive;
+    font-weight: 300;
+}
+.instructions p {
+    float: right;
+    position: relative;
+    left: 0;
+}
+.general_info {
+    color: white;
+    opacity: 0.8;
+    margin-right: 5%;
+    font-family: "Comfortaa", cursive;
+    float: right;
+    position: absolute;
+    bottom: 3%;
+    right: 1%;
+    font-weight: 300;
+}
+.general_info p {
+    text-align: right;
+    font-size: 11pt;
+    margin: 0;
+}
+
