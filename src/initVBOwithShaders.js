@@ -295,14 +295,6 @@ VBO_genetic.prototype.switchToMe = function () { //similar to previous set-up fo
         }
 
         // * [Lamp] & [Mouse Drag]
-        
-        // if(g_lamp0PosY != undefined && g_lamp0PosZ != undefined){ //TODO: somehow unable to change directly in mouseMove(ev)
-        //     this.g_lamp0.I_pos.elements[1] += g_lamp0PosY;
-        //     this.g_lamp0.I_pos.elements[2] += g_lamp0PosZ;
-
-        // }else{
-        //     this.g_lamp0.I_pos.elements.set( [6.0, 5.0, 5.0]);
-        // }
         if(isplight){
             if(g_isDrag){
                 prevY = this.g_lamp0.I_pos.elements[1] + g_lamp0PosY;
@@ -314,7 +306,7 @@ VBO_genetic.prototype.switchToMe = function () { //similar to previous set-up fo
                 this.g_lamp0.I_pos.elements[2] = prevZ;
             }
             else{
-                this.g_lamp0.I_pos.elements.set( [6.0, 5.0, 5.0]);
+                this.g_lamp0.I_pos.elements.set( [-3.0, 5.0, 8.0]);
             }
             //set RGB
             let ambiVal = parseFloat(reflectVal[0]).toFixed(2);
@@ -329,7 +321,6 @@ VBO_genetic.prototype.switchToMe = function () { //similar to previous set-up fo
             gl.uniform3fv(this.g_lamp0.u_diff, this.g_lamp0.I_diff.elements);		// diffuse
             gl.uniform3fv(this.g_lamp0.u_spec, this.g_lamp0.I_spec.elements);		// Specular
         }
-
       
         if(isHeadlight){
             this.g_lamp1.I_pos.elements.set([0.0, 6.0, 0.0]);
@@ -362,10 +353,6 @@ VBO_genetic.prototype.switchToMe = function () { //similar to previous set-up fo
                 gl.uniform3fv(this.g_matl0.uLoc_Ks, colors[2]);				// Ks specular
             }
         }
-       
-        // gl.uniform3fv(this.g_matl0.uLoc_Ka, this.g_matl0.K_ambi.slice(0,3));				// Ka ambient
-        // gl.uniform3fv(this.g_matl0.uLoc_Kd, this.g_matl0.K_diff.slice(0,3));				// Kd	diffuse
-        // gl.uniform3fv(this.g_matl0.uLoc_Ks, this.g_matl0.K_spec.slice(0,3));				// Ks specular
         
         //set default shiness
         let shinessVal = parseInt(this.g_matl0.K_shiny, 10)+parseInt(reflectVal[3]);

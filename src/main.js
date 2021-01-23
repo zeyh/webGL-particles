@@ -1,47 +1,103 @@
 /*
-Dec 7, 2020
+Jan, 15, 2021
 References: besides the inline links in index.html, the code is modified from 
-    [Textbook Chapter 8,9,10] Fog.js, LightedCube.js, PointLightedCube.js, 2012 matsuda and kanda
-    [Canvas ProjC Page] JT_VBObox-lib.js, JTSecondLight_perFragment.js, JTPointBlinnPhongSphere_perFragment.js
-    [Previous projects] ProjectA, ProjectB
+    [Textbook] x
+    [Canvas ProjC Page] x
+    [Previous projects] ProjectC from 351-1
 */
 /*
-  Done: individual VBO
-  Done: Ground-Plane vs Grid?
-  Done: 3D View Control: z-up? really??
-  Done: Single-Viewport 
-  Done: general diffuse shading
-  Done: Point light on the cube
-  Done: Blinn Phong shading
-  Done: Large, Slowly-spinning Sphere [move at (0,0,0)]
-  Done: Assign different looking phong material to 3+ object
-  Done: Rearrange Objects + 3 solid jointed obj 
-  Done: Add on screen instructions for each lighting scheme/ available keyboard/mouse interation options
-  Done: Gouraud Shading
-  Done: combine to get the 4 methods👇
-  ✨lighting/shading methods*4👇
-  100%: Phong lighting with Phong Shading, (no half-angles; uses true reflection angle)
-  100%: Blinn-Phong lighting with Phong Shading (requires ‘half-angle’, not reflection angle)
-  100%: Phong lighting with Gouraud Shading (computes colors per vertex; interpolates color only)
-  100%: Blinn-Phong lighting with Gouraud Shading (computes colors per vertex; interpolates color only)
-  Done: add second light switch on/off
+  TODO: xx
 
-! Bug🐞: 0. [setting with clearDrag @ htmlCallBack.js] lighting change with object movement...😠 
-
-! TODO: 2. usercontrol:
-            ❌ world-space position, 
-            ✅ switch light on/off,
-            ✅ set separate R,G,B values for each of the ambient, diffuse, and specular light amount
-! TODO: 4. Simple Texture Maps emmisive
-
-! future work😐: user-selected distance dependencies??? does Foggy effect count for 1/3?
-! future work😠: modify [shaderinfo.js] and the [shadingScheme] object to be less repetitive...
-! future work😐: geometric shape distortions in shaders???
+  ! 🐞: draggable blin-phong light direction: mainly black
 */
 
 "use strict"
+
+var canvas;	
+var gl;	
+var g_viewProjMatrix;
+var g_modelMatrix;
+var shadingScheme;
+var vboArray;
+
+function initVBOs(currScheme){
+    var grid = new VBO_genetic(diffuseVert, diffuseFrag, grid_vertices, grid_colors, grid_normals, null, 0);
+    grid.init();
+    var plane = new VBO_genetic(currScheme[0], currScheme[1], plane_vertices, plane_colors, plane_normals, plane_indices, currScheme[2]);
+    plane.init();
+    var sphere = new VBO_genetic(currScheme[0], currScheme[1], sphere_vertices, sphere_colors, sphere_normals, sphere_indices, currScheme[2], 10);
+    sphere.init();
+    var sphere_test = new VBO_genetic(currScheme[0], currScheme[1], sphere_vertices, sphere_colors, sphere_normals, sphere_indices, currScheme[2]);
+    sphere_test.init();
+
+    vboArray = [grid, plane, sphere_test, sphere];
+}
+function main() {
+    console.log("I'm in main.js right now...");
+    
+    canvas = document.getElementById('webgl');
+    gl = canvas.getContext("webgl", { preserveDrawingBuffer: true});
+    if (!gl) {
+        console.log('Failed to get the rendering context for WebGL');
+        return;
+    }
+
+    window.addEventListener("mousedown", myMouseDown);
+    window.addEventListener("mousemove", myMouseMove);
+    window.addEventListener("mouseup", myMouseUp);
+    window.addEventListener("wheel", mouseWheel);
+    document.onkeydown = function (ev) {
+        keyAD(ev);
+        keyWS(ev);
+        keyQE(ev);
+        keyArrowRotateRight(ev);
+        keyArrowRotateUp(ev);
+        materialKeyPress(ev);
+    };
+
+    // Set the clear color and enable the depth test
+    gl.clearColor(0.15, 0.15, 0.15, 1.0);
+    // gl.clearColor(0.0, 0.0, 0.0, 0.0);
+    gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.BLEND);// Enable alpha blending
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Set blending function conflict with shadow...?
+    g_modelMatrix = new Matrix4(); 
+
+    // TODO: maybe a better way to structure this...
+    shadingScheme = { //[plane, cube, cube2, sphere, sphere2, cube3] 
+        0:[PhongPhongVert,PhongPhongFrag,5],
+        1:[draggableBlinnPhongVert,draggableBlinnPhongFrag,3],
+    };
+
+    initVBOs(shadingScheme[0]);    
+
+    var tick = function () {
+        canvas.width = window.innerWidth * 1; //resize canvas
+        canvas.height = window.innerHeight * 1;
+        currentAngle = animate(currentAngle);
+        g_cloudAngle = animateCloud();
+        g_jointAngle = animateJoints();
+        g_jointAngle2 = animateJoints2();
+
+        // ! setting view control
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        g_viewProjMatrix = new Matrix4(); //should be the same for every vbo
+        var aspectRatio = (gl.canvas.width) / (gl.canvas.height);
+        g_viewProjMatrix.setPerspective(30.0, aspectRatio, 1, 100);
+        g_viewProjMatrix.lookAt(g_EyeX, g_EyeY, g_EyeZ, g_LookX, g_LookY, g_LookZ, 0, 1, 0); //center/look-at point
+        g_viewProjMatrix.scale(0.4 * g_viewScale, 0.4 * g_viewScale, 0.4 * g_viewScale); //scale everything
+    
+        // ! draw
+        drawAll(vboArray);
+        window.requestAnimationFrame(tick, canvas);
+
+    }
+    tick();
+
+}
+
 /* the different shaders details */
-// TODO: do if statement for the blue marking lines instead of declearing the similar thing multiple times... but meh for now😓
 var draggableBlinnPhongVert = 
     "struct MatlT {\n" +
     "		vec3 emit;\n" + // Ke: emissive -- surface 'glow' amount (r,g,b);
@@ -237,88 +293,35 @@ var diffuseFrag = // * not used but could be used with lightSpec 0
     "  gl_FragColor = v_Color;\n" +
     "}\n";
 
-var canvas;	
-var gl;	
-var g_viewProjMatrix;
-var g_modelMatrix;
-var shadingScheme;
-var vboArray;
+var particleVert = 
+    'precision mediump float;\n' +			// req'd in OpenGL ES if we use 'float'
+    'uniform   int u_runMode; \n' +			// particle system state: 
+    'uniform   vec4 u_ballShift; \n' +		// single bouncy-ball's movement
+    'attribute vec4 a_Position;\n' +
+    'varying   vec4 v_Color; \n' +
+    'void main() {\n' +
+    '  gl_PointSize = 10.0;\n' +
+    '	gl_Position = a_Position + u_ballShift; \n' +	
+    '  if(u_runMode == 0) { \n' +
+    '	   v_Color = vec4(1.0, 0.0, 0.0, 1.0);	\n' + //color already assigned here		// red: 0==reset
+    '  	 } \n' +
+    '  else if(u_runMode == 1) {  \n' +
+    '    v_Color = vec4(1.0, 1.0, 0.0, 1.0); \n' +	// yellow: 1==pause
+    '    }  \n' +
+    '  else if(u_runMode == 2) { \n' +    
+    '    v_Color = vec4(1.0, 1.0, 1.0, 1.0); \n' +	// white: 2==step
+    '    } \n' +
+    '  else { \n' +
+    '    v_Color = vec4(0.2, 1.0, 0.2, 1.0); \n' +	// green: >3==run
+    '		 } \n' +
+    '} \n';
 
-function initVBOs(currScheme){
-    var grid = new VBO_genetic(diffuseVert, diffuseFrag, grid_vertices, grid_colors, grid_normals, null, 0);
-    grid.init();
-    var plane = new VBO_genetic(currScheme[0], currScheme[1], plane_vertices, plane_colors, plane_normals, plane_indices, currScheme[2], 11);
-    plane.init();
-    var sphere = new VBO_genetic(currScheme[0], currScheme[1], sphere_vertices, sphere_colors, sphere_normals, sphere_indices, currScheme[2], 10);
-    sphere.init();
-    var sphere_test = new VBO_genetic(currScheme[0], currScheme[1], sphere_vertices, sphere_colors, sphere_normals, sphere_indices, currScheme[2]);
-    sphere_test.init();
-
-    vboArray = [grid, plane, sphere_test, sphere];
-}
-function main() {
-    console.log("I'm in main.js right now...");
-    
-    canvas = document.getElementById('webgl');
-    gl = canvas.getContext("webgl", { preserveDrawingBuffer: true});
-    if (!gl) {
-        console.log('Failed to get the rendering context for WebGL');
-        return;
-    }
-
-    window.addEventListener("mousedown", myMouseDown);
-    window.addEventListener("mousemove", myMouseMove);
-    window.addEventListener("mouseup", myMouseUp);
-    window.addEventListener("wheel", mouseWheel);
-    document.onkeydown = function (ev) {
-        keyAD(ev);
-        keyWS(ev);
-        keyQE(ev);
-        keyArrowRotateRight(ev);
-        keyArrowRotateUp(ev);
-        materialKeyPress(ev);
-    };
-
-    // Set the clear color and enable the depth test
-    gl.clearColor(0.15, 0.15, 0.15, 1.0);
-    // gl.clearColor(0.0, 0.0, 0.0, 0.0);
-    gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.BLEND);// Enable alpha blending
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Set blending function conflict with shadow...?
-    g_modelMatrix = new Matrix4(); 
-
-    // TODO: maybe a better way to structure this...
-    shadingScheme = { //[plane, cube, cube2, sphere, sphere2, cube3] 
-        0:[PhongPhongVert,PhongPhongFrag,5],
-    };
-
-    initVBOs(shadingScheme[0]);    
-
-    var tick = function () {
-        canvas.width = window.innerWidth * 1; //resize canvas
-        canvas.height = window.innerHeight * 1;
-        currentAngle = animate(currentAngle);
-        g_cloudAngle = animateCloud();
-        g_jointAngle = animateJoints();
-        g_jointAngle2 = animateJoints2();
-
-        // ! setting view control
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
-        gl.viewport(0, 0, canvas.width, canvas.height);
-        g_viewProjMatrix = new Matrix4(); //should be the same for every vbo
-        var aspectRatio = (gl.canvas.width) / (gl.canvas.height);
-        g_viewProjMatrix.setPerspective(30.0, aspectRatio, 1, 100);
-        g_viewProjMatrix.lookAt(g_EyeX, g_EyeY, g_EyeZ, g_LookX, g_LookY, g_LookZ, 0, 1, 0); //center/look-at point
-        g_viewProjMatrix.scale(0.4 * g_viewScale, 0.4 * g_viewScale, 0.4 * g_viewScale); //scale everything
-    
-        // ! draw
-        drawAll(vboArray);
-        window.requestAnimationFrame(tick, canvas);
-
-    }
-    tick();
-
-}
-
-
-
+var particleFrag =
+    'precision mediump float;\n' +
+    'varying vec4 v_Color; \n' +
+    'void main() {\n' +
+    '  float dist = distance(gl_PointCoord, vec2(0.5, 0.5)); \n' +
+    '  if(dist < 0.5) { \n' +	
+      '  	gl_FragColor = vec4((1.0-2.0*dist)*v_Color.rgb, 1.0);\n' +
+      '  } else { discard; }\n' +
+    '}\n';
