@@ -1,5 +1,5 @@
 /* anything involving html events handling*/
-var quatMatrix = new Matrix4();   
+var quatMatrix = new Matrix4();
 var qNew = new Quaternion(0, 0, 0, 1); // most-recent mouse drag's rotation
 var qTot = new Quaternion(0, 0, 0, 1);	// 'current' orientation (made from qNew)
 
@@ -16,13 +16,15 @@ var g_LookUp = 0.0;
 var g_speed = 1;
 
 var g_schemeOpt = 0;
+var g_curRunMode = 3;	// particle system state: 0=reset; 1= pause; 2=step; 3=run
+
 // control lighting scheme slider bar
-function controlScheme(){
+function controlScheme() {
     var slider = document.getElementById("shadingScheme");
     var optionText = document.querySelectorAll(".options");
     let instructions = document.querySelectorAll(".dynamicInstruction");
     var totalOptions = Array.from(Array(optionText.length).keys());
-    var underline = function(){
+    var underline = function () {
         var currSelectionValue = slider.value;
         g_schemeOpt = currSelectionValue; // ! update shading scheme
         // setControlPanel();
@@ -45,79 +47,79 @@ function controlScheme(){
     }
     underline();
 
-    slider.oninput = function(){ //keep listening slider input change
+    slider.oninput = function () { //keep listening slider input change
         underline();
     }
 }
 
 var isBlinn = false;
-function controlSwitch(){
+function controlSwitch() {
     var currSwitch = document.getElementById("phongSwitch");
-    var watchSwitch = function(){
+    var watchSwitch = function () {
         isBlinn = !isBlinn;
         document.getElementById('phongSwitchText').textContent = isBlinn ? "Phong" : "Blinn-Phong";
         g_schemeOpt = !isBlinn ? 1 : 4;
         initVBOs(shadingScheme[g_schemeOpt]);
     }
-    currSwitch.oninput = function(){ //keep listening slider input change
+    currSwitch.oninput = function () { //keep listening slider input change
         watchSwitch();
     }
 }
 
 var isBlinn2 = false;
-function controlSwitch2(){
+function controlSwitch2() {
     var currSwitch = document.getElementById("gouraudSwitch");
-    var watchSwitch2 = function(){
+    var watchSwitch2 = function () {
         isBlinn2 = !isBlinn2;
         document.getElementById('gouraudSwitchText').textContent = isBlinn2 ? "Phong" : "Blinn-Phong";
         g_schemeOpt = !isBlinn2 ? 2 : 5;
         console.log(g_schemeOpt)
         initVBOs(shadingScheme[g_schemeOpt]);
     }
-    currSwitch.oninput = function(){ //keep listening slider input change
+    currSwitch.oninput = function () { //keep listening slider input change
         watchSwitch2();
     }
 }
 
 var isHeadlight = false;
-function controlSwitch3(){
+function controlSwitch3() {
     var currSwitch = document.getElementById("headlightSwitch");
-    var watchSwitch3 = function(){
+    var watchSwitch3 = function () {
         isHeadlight = !isHeadlight;
         document.getElementById('headlightSwitchText').textContent = isHeadlight ? "off" : "on";
         initVBOs(shadingScheme[g_schemeOpt]); //refresh vbo rendering
         console.log(isHeadlight, "headlight");
         console.log(isplight, "world light");
     }
-    currSwitch.oninput = function(){ //keep listening slider input change
+    currSwitch.oninput = function () { //keep listening slider input change
         watchSwitch3();
     }
 }
 
 var isplight = true;
-function controlSwitch4(){
+function controlSwitch4() {
     var currSwitch = document.getElementById("plightSwitch");
-    var watchSwitch4 = function(){
+    var watchSwitch4 = function () {
         isplight = !isplight;
         document.getElementById('plightSwitchText').textContent = isplight ? "off" : "on";
         initVBOs(shadingScheme[g_schemeOpt]); //refresh vbo rendering
         console.log(isHeadlight, "headlight");
         console.log(isplight, "world light");
     }
-    currSwitch.oninput = function(){ //keep listening slider input change
+    currSwitch.oninput = function () { //keep listening slider input change
         watchSwitch4();
     }
 }
 
 
 
-var reflectVal = [0.4,1.0,1.0,0];
+var reflectVal = [0.4, 1.0, 1.0, 0];
 var slider = document.querySelectorAll(".minislider");
 var sliderText = document.querySelectorAll(".miniSliderText");
-function setSlider(index){
-    if(index != 3){ //fix width
+function setSlider(index) {
+    if (index != 3) { //fix width
         reflectVal[index] = (Math.round(slider[index].value * 100) / 100).toFixed(2);;
-    }else{
+    } else {
         reflectVal[index] = slider[index].value;
     }
     sliderText[index].textContent = reflectVal[index];
@@ -127,12 +129,12 @@ var colors = [];
 var colorSlider = document.querySelectorAll(".colorPicker");
 colorSlider.forEach(elem => {
     let tmp = hexToRgb(elem.value);
-    colors.push([tmp.r/255, tmp.g/255, tmp.b/255]); //get the default
+    colors.push([tmp.r / 255, tmp.g / 255, tmp.b / 255]); //get the default
     tmp = null;
 });
-function setColorSlider(index){
+function setColorSlider(index) {
     let c = hexToRgb(colorSlider[index].value);
-    colors[index] = [c.r/255, c.g/255, c.b/255];
+    colors[index] = [c.r / 255, c.g / 255, c.b / 255];
     initVBOs(shadingScheme[g_schemeOpt]); //refresh vbo rendering
 }
 
@@ -140,22 +142,22 @@ function setColorSlider(index){
 function hexToRgb(hex) {
     // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
     var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    hex = hex.replace(shorthandRegex, function(m, r, g, b) {
-      return r + r + g + g + b + b;
+    hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+        return r + r + g + g + b + b;
     });
-  
+
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
     } : null;
-  }
-  
+}
+
 
 
 // ===================================for dat-gui setup
-var params = { 
+var params = {
     left: -1.00,
     right: 1.00,
     top: -1.00,
@@ -163,7 +165,7 @@ var params = {
     near: 1.00,
     far: 100.00,
 };
-var params_fly = { 
+var params_fly = {
     turning_angle: 0.00,
     up_down: 0.00,
     speed: 0.10,
@@ -177,7 +179,7 @@ var guileft, guiright, guitop, guibottom, guinear, guifar;
 var guiArr_frustum, guiArr_fly;
 var gui;
 function setControlPanel() {
-    if(g_schemeOpt == 0){
+    if (g_schemeOpt == 0) {
         gui = new dat.GUI();
         //frustrum controller
         var frustrumController = gui.add(view, 'use_frustum').listen();
@@ -199,12 +201,12 @@ function setControlPanel() {
             }
         });
     }
-    else{
-        if(gui){
+    else {
+        if (gui) {
             gui.close();
         }
     }
-    
+
 }
 function disableGui(arr) {
     for (let i = 0; i < arr.length; i++) {
@@ -219,8 +221,8 @@ function enableGui(arr) {
     }
 }
 // fly
-function flyForward(){
-    if(isFly){
+function flyForward() {
+    if (isFly) {
         g_EyeZ -= 0.1 * params_fly.speed;
         g_LookZ -= 0.1 * params_fly.speed;
         //turning head right/left
@@ -242,41 +244,41 @@ function resizeCanvas(gl, arr, u_ProjMatrix, projMatrix, u_ViewMatrix, viewMatri
 }
 
 var hideGrid = false;
-function gridDisplay(){
-    if(hideGrid){
+function gridDisplay() {
+    if (hideGrid) {
         //start
         hideGrid = false;
         document.querySelector('#showGrid').textContent = 'Show Plane';
-    }else{
+    } else {
         hideGrid = true;
         document.querySelector('#showGrid').textContent = 'Show Grid';
     }
 }
 var hideSphere = false;
-function sphereDisplay(){
-    if(hideSphere){
+function sphereDisplay() {
+    if (hideSphere) {
         //start
         hideSphere = false;
         document.querySelector('#showSphere').textContent = 'Show Sphere';
-    }else{
+    } else {
         hideSphere = true;
         document.querySelector('#showSphere').textContent = 'Hide Sphere';
     }
 }
 
 var isStop = false;
-function stopMotion1(){
-    if(isStop){
+function stopMotion1() {
+    if (isStop) {
         //start
         isStop = false;
 
-    }else{
+    } else {
         isStop = true;
     }
 }
 
 var g_jointAngle2 = 0;
-function rotateMotion1(){
+function rotateMotion1() {
     g_jointAngle2 += 10 % 360;
 }
 
@@ -296,6 +298,33 @@ function initWindow() {
 
 // * ===================Keyboard event-handling Callbacks===========
 // ref: https://keycode.info/ http://learnwebgl.brown37.net/07_cameras/camera_rotating_motion.html
+function key123(ev) {
+    if (ev.keyCode == 48) { // 0
+        g_curRunMode = 0;	//reset		
+    }
+    else if (ev.keyCode == 49) { // 1
+        g_curRunMode = 1;	//pause
+    }
+    else if (ev.keyCode == 50) { // 2
+        g_curRunMode = 2; //step
+    }
+    else if (ev.keyCode == 51) { // 3
+        g_curRunMode = 3; //run
+    }
+    else if (ev.keyCode == 82) { //R
+        if (xvelNow > 0.0) {
+            xvelNow += INIT_VEL;
+        } else {
+            xvelNow -= INIT_VEL;
+        }
+        if (yvelNow > 0.0) {
+            yvelNow += INIT_VEL;
+        } else {
+            yvelNow -= INIT_VEL;
+        }
+    }
+}
+
 function keyAD(ev) {
     if (ev.keyCode == 68) { // d
         g_EyeX += 0.1 * g_speed;
@@ -318,7 +347,7 @@ function keyWS(ev) {
     } else if (ev.keyCode == 87) { // s moving backward
         g_EyeZ -= 0.1 * g_speed;
         g_LookZ -= 0.1 * g_speed;
-        g_fogDist[1]  += 1; // ! change fog visibility
+        g_fogDist[1] += 1; // ! change fog visibility
     } else { return; }
 }
 
@@ -351,28 +380,27 @@ function keyArrowRotateUp(ev) {//change x from -1 to 1
 
 var g_matlSel = 18;
 function materialKeyPress(ev) {
-        switch(ev.keyCode)
-        {
-            case 77:	// UPPER-case 'M' key:
-            case 109:	// LOWER-case 'm' key:
-                g_matlSel = (g_matlSel +1)%MATL_DEFAULT;	
-                console.log(g_matlSel)// see materials_Ayerdi.js for list
-                break;
-            // case 83: // UPPER-case 's' key:
-            //     matl0.K_shiny += 1.0;								// INCREASE shinyness, but with a
-            //     if(matl0.K_shiny > 128.0) matl0.K_shiny = 128.0;	// upper limit.
-            //     console.log('UPPERcase S: ++K_shiny ==', matl0.K_shiny,'\n');	
-            //     break;
-            // case 115:	// LOWER-case 's' key:
-            //     matl0.K_shiny += -1.0;								// DECREASE shinyness, but with a
-            //     if(matl0.K_shiny < 1.0) matl0.K_shiny = 1.0;		// lower limit.
-            //     console.log('lowercase s: --K_shiny ==', matl0.K_shiny, '\n');
-            //     break;
-            default:
+    switch (ev.keyCode) {
+        case 77:	// UPPER-case 'M' key:
+        case 109:	// LOWER-case 'm' key:
+            g_matlSel = (g_matlSel + 1) % MATL_DEFAULT;
+            console.log(g_matlSel)// see materials_Ayerdi.js for list
             break;
-        }
+        // case 83: // UPPER-case 's' key:
+        //     matl0.K_shiny += 1.0;								// INCREASE shinyness, but with a
+        //     if(matl0.K_shiny > 128.0) matl0.K_shiny = 128.0;	// upper limit.
+        //     console.log('UPPERcase S: ++K_shiny ==', matl0.K_shiny,'\n');	
+        //     break;
+        // case 115:	// LOWER-case 's' key:
+        //     matl0.K_shiny += -1.0;								// DECREASE shinyness, but with a
+        //     if(matl0.K_shiny < 1.0) matl0.K_shiny = 1.0;		// lower limit.
+        //     console.log('lowercase s: --K_shiny ==', matl0.K_shiny, '\n');
+        //     break;
+        default:
+            break;
+    }
 }
-    
+
 
 // * ===================Keyboard event-handling Callbacks===========
 function clearDrag() {
@@ -402,14 +430,14 @@ function myMouseDown(ev) {
     var x = (xp - canvas.width / 2) / (canvas.width / 2);
     var y = (yp - canvas.height / 2) / (canvas.height / 2);
 
-    if( xp <= 500 && yp <= 600){ //dragging must be in correct place
+    if (xp <= 500 && yp <= 600) { //dragging must be in correct place
         g_isDrag = true;
         // console.log("dragging",xp,yp )
     }
     // console.log("not",xp,yp )
     // g_isDrag = true;
-    g_xMclik = x; 
-    g_yMclik = y; 
+    g_xMclik = x;
+    g_yMclik = y;
     // console.log(yp); //(0-50)
 
 
@@ -433,22 +461,22 @@ function myMouseMove(ev) {
     //     g_lamp0.I_pos.elements[1] + 4.0*(x-g_xMclik),	// Horiz drag: change world Y
     //     g_lamp0.I_pos.elements[2] + 4.0*(y-g_yMclik) 	// Vert. drag: change world Z
     // ]);
-    if(currLampPos){
-        currLampPos[1] = currLampPos[1] + 4.0*(x-g_xMclik);
-        currLampPos[2] = currLampPos[2] + 4.0*(y-g_yMclik);
+    if (currLampPos) {
+        currLampPos[1] = currLampPos[1] + 4.0 * (x - g_xMclik);
+        currLampPos[2] = currLampPos[2] + 4.0 * (y - g_yMclik);
     }
 
     // console.log(currLampPos)
-    g_lamp0PosY = 4.0*(x-g_xMclik);
-    g_lamp0PosZ = 4.0*(y-g_yMclik);
-    g_eyePosY = 8.0*(x-g_xMclik);
-    g_eyePosZ = 8.0*(y-g_yMclik);
+    g_lamp0PosY = 4.0 * (x - g_xMclik);
+    g_lamp0PosZ = 4.0 * (y - g_yMclik);
+    g_eyePosY = 8.0 * (x - g_xMclik);
+    g_eyePosZ = 8.0 * (y - g_yMclik);
 
 
     // find how far we dragged the mouse:
     g_xMdragTot += (x - g_xMclik);
     g_yMdragTot += (y - g_yMclik);
-    
+
     g_xMclik = x;
     g_yMclik = y;
 };

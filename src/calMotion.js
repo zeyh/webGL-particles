@@ -1,12 +1,6 @@
 /* calculate some equations*/
 'use strict';
-var timeStep = 1.0/30.0;	
-// Define just one 'bouncy ball' particle
-var xposNow =  0.0;		var yposNow =  0.0;		var zposNow =  0.0;		
-var xvelNow =  0.0;		var yvelNow =  0.0;		var zvelNow =  0.0;
-var INIT_VEL = 0.15;		// adjusted by ++Start, --Start buttons.
-// For keyboard, mouse-click-and-drag:		
-var myRunMode = 3;	// particle system state: 0=reset; 1= pause; 2=step; 3=run
+
 
 
 const pendulumFcn = (y) => {

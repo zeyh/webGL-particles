@@ -1,14 +1,30 @@
 /*
-Jan, 15, 2021
+Jan 24, 2021
 References: besides the inline links in index.html, the code is modified from 
-    [Textbook] x
-    [Canvas ProjC Page] x
+    [Textbook] ...
+    [Canvas Starter Code] ...
     [Previous projects] ProjectC from 351-1
 */
 /*
-  TODO: xx
+    Done: display point
+    Done: r/R key to start and add velocity to single ball bouncing 
+    ? Doing: s/S key to toggle explicit/implicit solvers ('bad'/'good')
+    ? Doing: b/B key to change bounce scheme
+    ? Doing: printBall()
+    TODO:  object oriented
+    TODO:  multiple 
 
-  ! 🐞: draggable blin-phong light direction: mainly black
+    ! need testing: 
+        123 key to change runcode mode & state
+    ! missing: user controls:
+        --r/R key to ''refresh' or 'Reset' the bouncy ball;
+        --p/P key to pause/unpause the bouncy ball;
+        --SPACE BAR to single-step the bouncy ball.
+        --c/C key to toggle WebGL screen-clearing in draw() fcn. 
+        --d/D key to adjust drag up or down;
+        --g/G key to adjust gravity up or down.
+        ! adding all above to on screen instructions
+    ! 🐞: draggable blin-phong light direction: mainly black
 */
 
 "use strict"
@@ -30,7 +46,10 @@ function initVBOs(currScheme){
     var sphere_test = new VBO_genetic(currScheme[0], currScheme[1], sphere_vertices, sphere_colors, sphere_normals, sphere_indices, currScheme[2]);
     sphere_test.init();
 
-    vboArray = [grid, plane, sphere_test, sphere];
+    var particle = new VBO_particle(particleVert, particleFrag, pt_vertices, 1);
+    particle.init();
+    
+    vboArray = [grid, plane, sphere_test, sphere, particle];
 }
 function main() {
     console.log("I'm in main.js right now...");
@@ -50,6 +69,7 @@ function main() {
         keyAD(ev);
         keyWS(ev);
         keyQE(ev);
+        key123(ev);
         keyArrowRotateRight(ev);
         keyArrowRotateUp(ev);
         materialKeyPress(ev);
@@ -63,7 +83,6 @@ function main() {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Set blending function conflict with shadow...?
     g_modelMatrix = new Matrix4(); 
 
-    // TODO: maybe a better way to structure this...
     shadingScheme = { //[plane, cube, cube2, sphere, sphere2, cube3] 
         0:[PhongPhongVert,PhongPhongFrag,5],
         1:[draggableBlinnPhongVert,draggableBlinnPhongFrag,3],
@@ -74,10 +93,9 @@ function main() {
     var tick = function () {
         canvas.width = window.innerWidth * 1; //resize canvas
         canvas.height = window.innerHeight * 1;
-        currentAngle = animate(currentAngle);
-        g_cloudAngle = animateCloud();
-        g_jointAngle = animateJoints();
-        g_jointAngle2 = animateJoints2();
+
+        var timeStep = 1000.0/60.0;	
+        timeStep = animateTimestep(timeStep); 
 
         // ! setting view control
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
@@ -89,7 +107,7 @@ function main() {
         g_viewProjMatrix.scale(0.4 * g_viewScale, 0.4 * g_viewScale, 0.4 * g_viewScale); //scale everything
     
         // ! draw
-        drawAll(vboArray);
+        drawAll(timeStep, vboArray);
         window.requestAnimationFrame(tick, canvas);
 
     }
@@ -295,24 +313,25 @@ var diffuseFrag = // * not used but could be used with lightSpec 0
 
 var particleVert = 
     'precision mediump float;\n' +			// req'd in OpenGL ES if we use 'float'
-    'uniform   int u_runMode; \n' +			// particle system state: 
+    'uniform   int  u_runMode; \n' +			// particle system state: 
     'uniform   vec4 u_ballShift; \n' +		// single bouncy-ball's movement
     'attribute vec4 a_Position;\n' +
     'varying   vec4 v_Color; \n' +
+    "uniform   mat4 u_MvpMatrix;\n" +
     'void main() {\n' +
-    '  gl_PointSize = 10.0;\n' +
-    '	gl_Position = a_Position + u_ballShift; \n' +	
+    '  gl_PointSize = 20.0;\n' +
+    '  gl_Position = u_MvpMatrix * (a_Position + u_ballShift); \n' +	
     '  if(u_runMode == 0) { \n' +
     '	   v_Color = vec4(1.0, 0.0, 0.0, 1.0);	\n' + //color already assigned here		// red: 0==reset
     '  	 } \n' +
     '  else if(u_runMode == 1) {  \n' +
-    '    v_Color = vec4(1.0, 1.0, 0.0, 1.0); \n' +	// yellow: 1==pause
+    '    v_Color = vec4(0.6, 0.6, 0.0, 1.0); \n' +	// yellow: 1==pause
     '    }  \n' +
     '  else if(u_runMode == 2) { \n' +    
-    '    v_Color = vec4(1.0, 1.0, 1.0, 1.0); \n' +	// white: 2==step
+    '    v_Color = vec4(0.6, 0.6, 0.6, 1.0); \n' +	// white: 2==step
     '    } \n' +
     '  else { \n' +
-    '    v_Color = vec4(0.2, 1.0, 0.2, 1.0); \n' +	// green: >3==run
+    '    v_Color = vec4(240/255, 255/255, 100/255, 1.0); \n' +	// green: >3==run
     '		 } \n' +
     '} \n';
 
