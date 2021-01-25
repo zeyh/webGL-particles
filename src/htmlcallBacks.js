@@ -16,7 +16,9 @@ var g_LookUp = 0.0;
 var g_speed = 1;
 
 var g_schemeOpt = 0;
+//TODO: 👇 encode the object's attribute
 var g_curRunMode = 3;	// particle system state: 0=reset; 1= pause; 2=step; 3=run
+var g_solverScheme = 1;
 
 // control lighting scheme slider bar
 function controlScheme() {
@@ -299,28 +301,59 @@ function initWindow() {
 // * ===================Keyboard event-handling Callbacks===========
 // ref: https://keycode.info/ http://learnwebgl.brown37.net/07_cameras/camera_rotating_motion.html
 function key123(ev) {
-    if (ev.keyCode == 48) { // 0
-        g_curRunMode = 0;	//reset		
+    if (ev.keyCode == 48) { // 0 reset
+        g_curRunMode = 0;
     }
-    else if (ev.keyCode == 49) { // 1
-        g_curRunMode = 1;	//pause
+    else if (ev.keyCode == 49) { // 1 pause
+        g_curRunMode = 1;
     }
-    else if (ev.keyCode == 50) { // 2
-        g_curRunMode = 2; //step
+    else if (ev.keyCode == 50) { // 2 step
+        g_curRunMode = 2;
     }
-    else if (ev.keyCode == 51) { // 3
-        g_curRunMode = 3; //run
+    else if (ev.keyCode == 51) { // 3 run
+        g_curRunMode = 3;
     }
-    else if (ev.keyCode == 82) { //R
-        if (xvelNow > 0.0) {
-            xvelNow += INIT_VEL;
-        } else {
-            xvelNow -= INIT_VEL;
+    else if (ev.keyCode == 82) { //R for adding velocity
+        if (ev.shiftKey == false) {   // 'r' key: SOFT reset; boost velocity only
+            g_particle.runMode = 3; 
+            if (g_particle.s2[PART_XVEL] > 0.0){
+                g_particle.s2[PART_XVEL] += g_particle.INIT_VEL;
+            } 
+            else{
+                g_particle.s2[PART_XVEL] -= g_particle.INIT_VEL;
+            }
+            if (g_particle.s2[PART_YVEL] > 0.0){
+                g_particle.s2[PART_YVEL] += 0.9 * g_particle.INIT_VEL;
+            } 
+            else{
+                g_particle.s2[PART_YVEL] -= 0.9 * g_particle.INIT_VEL;
+            } 
         }
-        if (yvelNow > 0.0) {
-            yvelNow += INIT_VEL;
-        } else {
-            yvelNow -= INIT_VEL;
+        else {      // HARD reset: position AND velocity, BOTH state vectors:
+            g_particle.runMode = 0;			// RESET!
+            g_particle.s1[PART_XPOS] = -0.9;      // lower-left corner of CVV
+            g_particle.s1[PART_YPOS] = -0.9;      // with a 0.1 margin
+            g_particle.s1[PART_ZPOS] = 0.0;
+            g_particle.s1[PART_XVEL] = g_particle.INIT_VEL;
+            g_particle.s1[PART_YVEL] = g_particle.INIT_VEL; // initial velocity in meters/sec.
+            g_particle.s1[PART_ZVEL] = 0.0;
+
+            g_particle.s2[PART_XPOS] = -0.9;      
+            g_particle.s2[PART_YPOS] = -0.9;    
+            g_particle.s2[PART_ZPOS] = 0.0;
+            g_particle.s2[PART_XVEL] = g_particle.INIT_VEL;
+            g_particle.s2[PART_YVEL] = g_particle.INIT_VEL; 
+            g_particle.s2[PART_ZVEL] = 0.0;
+        }
+    }
+    else if (ev.keyCode == 70) { //F for change solver 
+        if (g_solverScheme == 0) {
+            console.log("change to implicit solver");
+            g_solverScheme = 1;
+        }
+        else {
+            console.log("change to explicit solver");
+            g_solverScheme = 0;
         }
     }
 }

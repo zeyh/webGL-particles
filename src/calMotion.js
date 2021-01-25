@@ -1,8 +1,6 @@
 /* calculate some equations*/
 'use strict';
 
-
-
 const pendulumFcn = (y) => {
     /* 
         @param: t - t span (max time)

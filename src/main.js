@@ -8,19 +8,18 @@ References: besides the inline links in index.html, the code is modified from
 /*
     Done: display point
     Done: r/R key to start and add velocity to single ball bouncing 
-    ? Doing: s/S key to toggle explicit/implicit solvers ('bad'/'good')
-    ? Doing: b/B key to change bounce scheme
-    ? Doing: printBall()
-    TODO:  object oriented
+    Done: f/F key to toggle explicit/implicit solvers ('bad'/'good')
+    ? Doing: object oriented
     TODO:  multiple 
 
     ! need testing: 
-        123 key to change runcode mode & state
+        123 key to change runcode mode & running state
     ! missing: user controls:
+        --b/B key to change bounce scheme (06)
         --r/R key to ''refresh' or 'Reset' the bouncy ball;
         --p/P key to pause/unpause the bouncy ball;
         --SPACE BAR to single-step the bouncy ball.
-        --c/C key to toggle WebGL screen-clearing in draw() fcn. 
+        --c/C key to toggle WebGL screen-clearing in draw() fcn. isClear
         --d/D key to adjust drag up or down;
         --g/G key to adjust gravity up or down.
         ! adding all above to on screen instructions
@@ -36,6 +35,12 @@ var g_modelMatrix;
 var shadingScheme;
 var vboArray;
 
+var g_timeStep = 1000.0/60.0;			// current timestep in milliseconds (init to 1/60th sec) 
+var g_timeStepMin = g_timeStep;   //holds min,max timestep values since last keypress.
+var g_timeStepMax = g_timeStep;
+
+var g_particle;
+
 function initVBOs(currScheme){
     var grid = new VBO_genetic(diffuseVert, diffuseFrag, grid_vertices, grid_colors, grid_normals, null, 0);
     grid.init();
@@ -46,7 +51,8 @@ function initVBOs(currScheme){
     var sphere_test = new VBO_genetic(currScheme[0], currScheme[1], sphere_vertices, sphere_colors, sphere_normals, sphere_indices, currScheme[2]);
     sphere_test.init();
 
-    var particle = new VBO_particle(particleVert, particleFrag, pt_vertices, 1);
+    var particle = new VBO_particle(particleVert, particleFrag, 2);
+    g_particle = particle;
     particle.init();
     
     vboArray = [grid, plane, sphere_test, sphere, particle];
@@ -94,9 +100,6 @@ function main() {
         canvas.width = window.innerWidth * 1; //resize canvas
         canvas.height = window.innerHeight * 1;
 
-        var timeStep = 1000.0/60.0;	
-        timeStep = animateTimestep(timeStep); 
-
         // ! setting view control
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
         gl.viewport(0, 0, canvas.width, canvas.height);
@@ -106,8 +109,21 @@ function main() {
         g_viewProjMatrix.lookAt(g_EyeX, g_EyeY, g_EyeZ, g_LookX, g_LookY, g_LookZ, 0, 1, 0); //center/look-at point
         g_viewProjMatrix.scale(0.4 * g_viewScale, 0.4 * g_viewScale, 0.4 * g_viewScale); //scale everything
     
+
+        // ! animation
+        g_timeStep = animateTimestep(); 
+        if(g_timeStep > 200) {   // did we wait > 0.2 seconds? 
+            g_timeStep = 1000/60;
+        }
+        if (g_timeStep < g_timeStepMin){
+            g_timeStepMin = g_timeStep;  
+        } 
+        else if(g_timeStep > g_timeStepMax){
+            g_timeStepMax = g_timeStep;
+        }
+
         // ! draw
-        drawAll(timeStep, vboArray);
+        drawAll(vboArray);
         window.requestAnimationFrame(tick, canvas);
 
     }
@@ -314,13 +330,12 @@ var diffuseFrag = // * not used but could be used with lightSpec 0
 var particleVert = 
     'precision mediump float;\n' +			// req'd in OpenGL ES if we use 'float'
     'uniform   int  u_runMode; \n' +			// particle system state: 
-    'uniform   vec4 u_ballShift; \n' +		// single bouncy-ball's movement
     'attribute vec4 a_Position;\n' +
     'varying   vec4 v_Color; \n' +
     "uniform   mat4 u_MvpMatrix;\n" +
     'void main() {\n' +
     '  gl_PointSize = 20.0;\n' +
-    '  gl_Position = u_MvpMatrix * (a_Position + u_ballShift); \n' +	
+    '  gl_Position = u_MvpMatrix * a_Position; \n' +	
     '  if(u_runMode == 0) { \n' +
     '	   v_Color = vec4(1.0, 0.0, 0.0, 1.0);	\n' + //color already assigned here		// red: 0==reset
     '  	 } \n' +

@@ -97,7 +97,7 @@ function animate(angle) {
 }
 
 var lastTimestep = Date.now();
-function animateTimestep(timeStep) {
+function animateTimestep() {
     var now = Date.now();
     var elapsed = now - lastTimestep;
     lastTimestep = now;
