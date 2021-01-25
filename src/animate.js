@@ -101,5 +101,6 @@ function animateTimestep() {
     var now = Date.now();
     var elapsed = now - lastTimestep;
     lastTimestep = now;
+    // g_stepCount = (g_stepCount +1)%1000;	
     return elapsed;
 }

@@ -13,7 +13,7 @@ function drawParticle(particle, g_modelMatrix, g_viewProjMatrix) {
 }
 
 function drawAll([grid, plane, sphere_test, sphere, particle]) {
-    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
 
     // particle
     pushMatrix(g_modelMatrix);

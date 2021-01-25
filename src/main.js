@@ -9,11 +9,15 @@ References: besides the inline links in index.html, the code is modified from
     Done: display point
     Done: r/R key to start and add velocity to single ball bouncing 
     Done: f/F key to toggle explicit/implicit solvers ('bad'/'good')
-    ? Doing: object oriented
-    TODO:  multiple 
+    Done: 123 key to change runcode mode & running state
+    Done: object oriented
+    Done: showing 2 particles
+    ? Doing: debug why multiple ball not moving correctly
+    TODO:  multiple particles moving
+    TODO: 3d movement
 
     ! need testing: 
-        123 key to change runcode mode & running state
+        n/a
     ! missing: user controls:
         --b/B key to change bounce scheme (06)
         --r/R key to ''refresh' or 'Reset' the bouncy ball;
@@ -51,7 +55,7 @@ function initVBOs(currScheme){
     var sphere_test = new VBO_genetic(currScheme[0], currScheme[1], sphere_vertices, sphere_colors, sphere_normals, sphere_indices, currScheme[2]);
     sphere_test.init();
 
-    var particle = new VBO_particle(particleVert, particleFrag, 2);
+    var particle = new VBO_particle(particleVert, particleFrag, 3);
     g_particle = particle;
     particle.init();
     
@@ -112,7 +116,7 @@ function main() {
 
         // ! animation
         g_timeStep = animateTimestep(); 
-        if(g_timeStep > 200) {   // did we wait > 0.2 seconds? 
+        if(g_timeStep > 200) {   // wait > 0.2 seconds
             g_timeStep = 1000/60;
         }
         if (g_timeStep < g_timeStepMin){
