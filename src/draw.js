@@ -1,25 +1,24 @@
 "use strict"
 
-function drawParticle(particle, g_modelMatrix, g_viewProjMatrix) {
-    if (particle.runMode > 1) { // 0=reset; 1= pause; 2=step; 3=run
-        if(particle.runMode == 2){
-            particle.runMode=1;
+function drawParticle(g_modelMatrix, g_viewProjMatrix) {
+    g_partA.switchToMe();
+    if (g_partA.runMode > 1) { // 0=reset; 1= pause; 2=step; 3=run
+        if(g_partA.runMode == 2){
+            g_partA.runMode=1;
         } 		
-        particle.solver();  
-        particle.doConstraints(); 
+        g_partA.solver();  
+        g_partA.doConstraints(); 
     }
-    particle.render(g_modelMatrix, g_viewProjMatrix);
-
+    g_partA.render(g_modelMatrix, g_viewProjMatrix);
 }
 
-function drawAll([grid, plane, sphere_test, sphere, particle]) {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
+function drawAll([grid, plane, sphere_test, sphere]) {
+    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
 
     // particle
     pushMatrix(g_modelMatrix);
     g_modelMatrix.setTranslate(1, 1, 1);
-    particle.switchToMe();
-    drawParticle(particle, g_modelMatrix, g_viewProjMatrix);
+    drawParticle(g_modelMatrix, g_viewProjMatrix);
     g_modelMatrix = popMatrix();
 
 

@@ -43,7 +43,7 @@ var g_timeStep = 1000.0/60.0;			// current timestep in milliseconds (init to 1/6
 var g_timeStepMin = g_timeStep;   //holds min,max timestep values since last keypress.
 var g_timeStepMax = g_timeStep;
 
-var g_particle;
+var g_partA;
 
 function initVBOs(currScheme){
     var grid = new VBO_genetic(diffuseVert, diffuseFrag, grid_vertices, grid_colors, grid_normals, null, 0);
@@ -55,11 +55,11 @@ function initVBOs(currScheme){
     var sphere_test = new VBO_genetic(currScheme[0], currScheme[1], sphere_vertices, sphere_colors, sphere_normals, sphere_indices, currScheme[2]);
     sphere_test.init();
 
-    var particle = new VBO_particle(particleVert, particleFrag, 3);
-    g_particle = particle;
-    particle.init();
+    g_partA = new PartSys();
+    g_partA.initShader(particleVert, particleFrag);
+    g_partA.initBouncy2D(3);
     
-    vboArray = [grid, plane, sphere_test, sphere, particle];
+    vboArray = [grid, plane, sphere_test, sphere];
 }
 function main() {
     console.log("I'm in main.js right now...");
@@ -115,6 +115,7 @@ function main() {
     
 
         // ! animation
+        currentAngle = animate(currentAngle);
         g_timeStep = animateTimestep(); 
         if(g_timeStep > 200) {   // wait > 0.2 seconds
             g_timeStep = 1000/60;
