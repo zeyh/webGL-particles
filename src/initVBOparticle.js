@@ -14,42 +14,33 @@ const PART_B = 12;
 const PART_MASS = 13;  // mass   
 const PART_DIAM = 14;	// on-screen diameter (in pixels)
 const PART_RENDMODE = 15;
-const PART_MAXVAR = 16; // max index = size of array
+const PART_AGE = 16;  // # of frame-times until re-initializing
+const PART_MAXVAR = 17; // max index = size of array
 
-const SOLV_NAIVE = 0;       // limited implicit method done 'wrong' in
-const SOLV_EULER = 1;       // Euler integration: forward,explicit,...
-const SOLV_MIDPOINT = 2;       // Midpoint Method (see Pixar Tutorial)
-const SOLV_ADAMS_BASH = 3;       // Adams-Bashforth Explicit Integrator
-const SOLV_RUNGEKUTTA = 4;       // Arbitrary degree, set by 'solvDegree'
-const SOLV_BACK_EULER = 5;       // 'Backwind' or Implicit Euler
-const SOLV_BACK_MIDPT = 6;       // 'Backwind' or Implicit Midpoint
-const SOLV_BACK_ADBASH = 7;       // 'Backwind' or Implicit Adams-Bashforth
+const SOLV_EULER = 0;       // Euler integration: forward,explicit,...
+const SOLV_MIDPOINT = 1;       // Midpoint Method (see Pixar Tutorial)
+const SOLV_ADAMS_BASH = 2;       // Adams-Bashforth Explicit Integrator
+const SOLV_RUNGEKUTTA = 3;       // Arbitrary degree, set by 'solvDegree'
+const SOLV_OLDGOOD = 4;      //  early accidental 'good-but-wrong' solver
+const SOLV_BACK_EULER = 5;      // 'Backwind' or Implicit Euler
+const SOLV_BACK_MIDPT = 6;      // 'Backwind' or Implicit Midpoint
+const SOLV_BACK_ADBASH = 7;      // 'Backwind' or Implicit Adams-Bashforth
 const SOLV_VERLET = 8;       // Verlet semi-implicit integrator;
 const SOLV_VEL_VERLET = 9;       // 'Velocity-Verlet'semi-implicit integrator
-const SOLV_LEAPFROG = 10;       // 'Leapfrog' integrator
-const SOLV_MAX = 11;       // number of solver types available.
-const NU_EPSILON = 10E-15;
-
+const SOLV_LEAPFROG = 10;      // 'Leapfrog' integrator
+const SOLV_MAX = 11;      // number of solver types available.
+const NU_EPSILON = 10E-15;         // a tiny amount; a minimum vector length
+// to use to avoid 'divide-by-zero'
 
 function PartSys() {
     this.randX = 0;
     this.randY = 0;
     this.randZ = 0;
+    this.forceList = [];
+    this.limitList = [];
 }
 
-PartSys.prototype.roundRand = function () {
-    /*
-    monte carlo sampling pts on unit sphere
-    */
-    do {
-        this.randX = 2.0 * Math.random() - 1.0; // [-1,1]
-        this.randY = 2.0 * Math.random() - 1.0;
-        this.randZ = 2.0 * Math.random() - 1.0;
-    }
-    while (this.randX * this.randX +
-    this.randY * this.randY +
-    this.randZ * this.randZ >= 1.0);
-}
+
 
 PartSys.prototype.initShader = function (vertSrc, fragSrc) {
     this.VERT_SRC = vertSrc;
@@ -86,9 +77,42 @@ PartSys.prototype.initBouncy2D = function (count) {
     argument selects among several different kinds of particle systems 
     and initial conditions.
     */
+
+
+    // ! force-causing objects
+    var fTmp = new CForcer();       // create a force-causing object, and
+    fTmp.forceType = F_GRAV_E;      // set it to earth gravity, and
+    fTmp.partFirst = 0;             // set it to affect ALL particles:
+    fTmp.partCount = -1;            // (negative value means ALL particles)
+    // (and IGNORE all other Cforcer members...)
+    this.forceList.push(fTmp);      // append this 'gravity' force object to 
+    // the forceList array of force-causing objects.
+    // Report:
+    console.log("PartSys.initBouncy2D() created PartSys.forceList[] array of ");
+    console.log("\t\t", this.forceList.length, "CForcer objects.");
+
+    // ! Create & init all constraint-causing objects
+    var cTmp = new CLimit();        // creat constraint-causing object, and
+    cTmp.hitType = HIT_BOUNCE_VEL;  // set how particles 'bounce' from its surface,
+    cTmp.limitType = LIM_VOL;       // confine particles inside axis-aligned 
+    // rectangular volume that
+    cTmp.partFirst = 0;             // applies to ALL particles; starting at 0 
+    cTmp.partCount = -1;            // through all the rest of them.
+    cTmp.xMin = -1.0; cTmp.xMax = 1.0;  // box extent:  +/- 1.0 box at origin
+    cTmp.yMin = -1.0; cTmp.yMax = 1.0;
+    cTmp.zMin = -1.0; cTmp.zMax = 1.0;
+    cTmp.Kresti = 1.0;              // bouncyness: coeff. of restitution.
+    // (and IGNORE all other CLimit members...)
+    this.limitList.push(cTmp);      // append this 'box' constraint object to the
+    // 'limitList' array of constraint-causing objects.                                
+    console.log("PartSys.initBouncy2D() created PartSys.limitList[] array of ");
+    console.log("\t\t", this.forceList.length, "CLimit objects.");
+
+    // ! ode constants
     this.partCount = count;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR);
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR);
+    this.s1dot = new Float32Array(this.partCount * PART_MAXVAR);
 
     this.INIT_VEL = 0.15 * 60.0;
     this.drag = 0.985; //friction force
@@ -109,10 +133,11 @@ PartSys.prototype.initBouncy2D = function (count) {
         this.s1[j + PART_XVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randX);
         this.s1[j + PART_YVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randY);
         this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randZ);
-        this.s1[j + PART_MASS] = 1.0;      
+        this.s1[j + PART_MASS] = 1.0;
         this.s1[j + PART_DIAM] = 2.0 + 10 * Math.random(); // on-screen diameter, in pixels
         this.s1[j + PART_RENDMODE] = 0.0;
-        this.s2.set(this.s1);   
+        this.s1[j + PART_AGE] = 30 + 100 * Math.random();
+        this.s2.set(this.s1);
     }
 
     // ! [Vertex] buffer
@@ -132,7 +157,7 @@ PartSys.prototype.initBouncy2D = function (count) {
         return -1;
     }
 
-    gl.vertexAttribPointer(this.a_PositionID, 4, gl.FLOAT, false, 
+    gl.vertexAttribPointer(this.a_PositionID, 4, gl.FLOAT, false,
         PART_MAXVAR * this.FSIZE, PART_XPOS * this.FSIZE);
     gl.enableVertexAttribArray(this.a_PositionID);
 
@@ -167,6 +192,78 @@ PartSys.prototype.isReady = function () { //very brief sanity check
     return isOK;
 }
 
+PartSys.prototype.applyForces = function (s, fList) {
+    /*
+    a function that accepts a state variable and an array of force-applying objects (e.g. a Forcer prototype or class; then make an array of these objects), and applies them to the given state variable
+    */
+   
+    var j = 0;  // i==particle number; j==array index for i-th particle
+    for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+        s[j + PART_X_FTOT] = 0.0;
+        s[j + PART_Y_FTOT] = 0.0;
+        s[j + PART_Z_FTOT] = 0.0;
+    }
+    for (var k = 0; k < fList.length; k++) {  // iterate through every cForce
+        if (fList[k].forceType <= 0) { // ignore F_NONE or temporarily disabled CForcer
+            continue;       
+        }
+        if (fList[k].partCount != 0) {  // does this force apply to a set of particles 
+            // stored sequentially in the state variable?
+            // Yes. Find m,mmax for those particles.
+            // (Recall: partCount = 0 means this forcer affects only 2 particles (e0,e1)
+            var m = fList[k].partFirst;     // particle # for 1st one affected;
+            var mmax = this.partCount;      // total number of particles in state s
+            if (fList[k].partCount > 0) {    // did forcer specify HOW MANY particles?
+                // (recall: if <0, forcer affects all particles from partFirst onwards)
+                // YES.  limit this CForcer to only that many particles.
+                mmax = m + fList[k].partCount - 1;
+            }           // m and mmax are now correctly initialized; use them!   
+            switch (fList[k].forceType) {    // what force should we apply to these particles
+                case F_MOUSE:     // Spring-like connection to mouse cursor
+                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                    break;
+                case F_GRAV_E:    // Earth-gravity pulls 'downwards' as defined by downDir
+                    var j = m * PART_MAXVAR;  // state var array index for particle # m
+                    for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
+                        // force from gravity == mass * gravConst * downDirection
+                        s[j + PART_X_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                            fList[k].downDir.elements[0];
+                        s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                            fList[k].downDir.elements[1];
+                        s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                            fList[k].downDir.elements[2];
+                    }
+                    break;
+                case F_GRAV_P:    // planetary gravity
+                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                    break;
+                case F_WIND:      // Blowing-wind-like force-field; fcn of 3D position
+                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                    break;
+                case F_BUBBLE:    // Constant inward force (bub_force)to a 3D centerpoint 
+                    // bub_ctr if particle is > bub_radius away from it.
+                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                    break;
+                case F_SPRING:
+                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                    break;
+                case F_SPRINGSET:
+                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                    break;
+                case F_CHARGE:
+                default:
+                    console.log("!!!ApplyForces() fList[", k, "] invalid forceType:", fList[k].forceType);
+                    break;
+            } // switch(fList[k].forceType)
+        } // if partCount !=0)...
+    } // for(k=0...)
+}
 
 PartSys.prototype.render = function (g_modelMatrix, g_viewProjMatrix) { //finally drawing🙏
     if (this.isReady() == false) {
@@ -184,11 +281,11 @@ PartSys.prototype.render = function (g_modelMatrix, g_viewProjMatrix) { //finall
 
     // ! particle movement
     // console.log(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE));
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.s1); 
-    gl.uniform1i(this.u_runModeID, this.runMode);	
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.s1);
+    gl.uniform1i(this.u_runModeID, this.runMode);
 
     // ! drawing
-    gl.drawArrays(gl.POINTS, 0, this.partCount);   
+    gl.drawArrays(gl.POINTS, 0, this.partCount);
 }
 
 PartSys.prototype.solver = function () {
@@ -346,5 +443,19 @@ PartSys.prototype.swap = function () {
     /*
     exchanges the contents of s1 and s2 by swapping their references
     */
-    this.s1.set(this.s2);   
+    this.s1.set(this.s2);
+}
+
+PartSys.prototype.roundRand = function () {
+    /*
+    monte carlo sampling pts on unit sphere
+    */
+    do {
+        this.randX = 2.0 * Math.random() - 1.0; // [-1,1]
+        this.randY = 2.0 * Math.random() - 1.0;
+        this.randZ = 2.0 * Math.random() - 1.0;
+    }
+    while (this.randX * this.randX +
+    this.randY * this.randY +
+    this.randZ * this.randZ >= 1.0);
 }

@@ -12,13 +12,18 @@ References: besides the inline links in index.html, the code is modified from
     Done: 123 key to change runcode mode & running state
     Done: object oriented
     Done: showing 2 particles
-    ? Doing: debug why multiple ball not moving correctly
-    TODO:  multiple particles moving
-    TODO: 3d movement
+    Done: debug why multiple ball not moving correctly
+    ? Doing: dotFinder(), s1dot
+    ? Doing: applyAllForces(), 
+    TODO: 3D movement
+    TODO: debug why other objects got impacted by # of particles and perhaps bufferSubData 
 
-    ! need testing: 
-        n/a
+    ! need testing/debugging: 
+        buffer overflow for plane???
+        scale the dots too, seems that particle points are not scaled when mouse scrolling
+
     ! missing: user controls:
+        --f/F fountain motion
         --b/B key to change bounce scheme (06)
         --r/R key to ''refresh' or 'Reset' the bouncy ball;
         --p/P key to pause/unpause the bouncy ball;
@@ -27,6 +32,7 @@ References: besides the inline links in index.html, the code is modified from
         --d/D key to adjust drag up or down;
         --g/G key to adjust gravity up or down.
         ! adding all above to on screen instructions
+
     ! 🐞: draggable blin-phong light direction: mainly black
 */
 
@@ -57,7 +63,7 @@ function initVBOs(currScheme){
 
     g_partA = new PartSys();
     g_partA.initShader(particleVert, particleFrag);
-    g_partA.initBouncy2D(3);
+    g_partA.initBouncy2D(30);
     
     vboArray = [grid, plane, sphere_test, sphere];
 }

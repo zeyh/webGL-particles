@@ -314,40 +314,48 @@ function key123(ev) {
         g_partA.runMode = 3;
     }
     else if (ev.keyCode == 82) { //R for adding velocity
-        console.log("r being pressed", g_partA.INIT_VEL)
         if (ev.shiftKey == false) {   // 'r' key: SOFT reset; boost velocity only
+            console.log("r being pressed", g_partA.INIT_VEL)
             g_partA.runMode = 3;  // RUN!
-            if (g_partA.s2[PART_XVEL] > 0.0){
-                g_partA.s2[PART_XVEL] += g_partA.INIT_VEL;
+            var j = 0; // array index for particle i
+            for (var i = 0; i < g_partA.partCount; i += 1, j += PART_MAXVAR) {
+                g_partA.roundRand();
+                if (g_partA.s2[j + PART_XVEL] > 0.0) {
+                    g_partA.s2[j + PART_XVEL] += 0.5 + 0.4 * g_partA.randX * g_partA.INIT_VEL;
+                }
+                else {
+                    g_partA.s2[j + PART_XVEL] -= 0.5 + 0.4 * g_partA.randX * g_partA.INIT_VEL;
+                }
+
+                if (g_partA.s2[j + PART_YVEL] > 0.0) {
+                    g_partA.s2[j + PART_YVEL] += 1.7 + 0.4 * g_partA.randY * g_partA.INIT_VEL;
+                }
+                else {
+                    g_partA.s2[j + PART_YVEL] -= 1.7 + 0.4 * g_partA.randY * g_partA.INIT_VEL;
+                }
+
+                if (g_partA.s2[j + PART_ZVEL] > 0.0) {
+                    g_partA.s2[j + PART_ZVEL] += 0.5 + 0.4 * g_partA.randZ * g_partA.INIT_VEL;
+                }
+                else {
+                    g_partA.s2[j + PART_ZVEL] -= 0.5 + 0.4 * g_partA.randZ * g_partA.INIT_VEL;
+                }
             }
-            else{
-                g_partA.s2[PART_XVEL] -= g_partA.INIT_VEL;
-            }
-            if (g_partA.s2[PART_YVEL] > 0.0){
-                g_partA.s2[PART_YVEL] += 0.9 * g_partA.INIT_VEL;
-            }
-            else g_partA.s2[PART_YVEL] -= 0.9 * g_partA.INIT_VEL;
         }
         else {      // HARD reset: position AND velocity, BOTH state vectors:
-            g_partA.runMode = 0;			// RESET!
-            // Reset state vector s1 for ALL particles:
-            var j = 0; // array index for particle i
-            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                //----------------------------------------
-            }
-            g_partA.s1[PART_XPOS] = -0.9;      // lower-left corner of CVV
-            g_partA.s1[PART_YPOS] = -0.9;      // with a 0.1 margin
-            g_partA.s1[PART_ZPOS] = 0.0;
-            g_partA.s1[PART_XVEL] = g_partA.INIT_VEL;
-            g_partA.s1[PART_YVEL] = g_partA.INIT_VEL; // initial velocity in meters/sec.
-            g_partA.s1[PART_ZVEL] = 0.0;
-            // do state-vector s2 as well:
-            g_partA.s2[PART_XPOS] = -0.9;      // lower-left corner of CVV
-            g_partA.s2[PART_YPOS] = -0.9;      // with a 0.1 margin
-            g_partA.s2[PART_ZPOS] = 0.0;
-            g_partA.s2[PART_XVEL] = g_partA.INIT_VEL;
-            g_partA.s2[PART_YVEL] = g_partA.INIT_VEL; // initial velocity in meters/sec.
-            g_partA.s2[PART_ZVEL] = 0.0;
+            console.log("shift+r being pressed", g_partA.INIT_VEL)
+            g_partA.runMode = 0;			
+            var j = 0; 
+            for (var i = 0; i < g_partA.partCount; i += 1, j += PART_MAXVAR) {
+                g_partA.roundRand();
+                g_partA.s1[j + PART_XPOS] = -0.9;      // lower-left corner of CVV
+                g_partA.s1[j + PART_YPOS] = -0.9;      // with a 0.1 margin
+                g_partA.s1[j + PART_ZPOS] = 0.0;
+                g_partA.s1[j + PART_XVEL] = 3.7 + 0.4 * g_partA.randX * g_partA.INIT_VEL;
+                g_partA.s1[j + PART_YVEL] = 3.7 + 0.4 * g_partA.randY * g_partA.INIT_VEL; 
+                g_partA.s1[j + PART_ZVEL] = 3.7 + 0.4 * g_partA.randZ * g_partA.INIT_VEL;
+                g_partA.s2.set(g_partA.s1);
+            } 
 
         }
 
