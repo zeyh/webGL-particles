@@ -77,8 +77,6 @@ PartSys.prototype.initBouncy2D = function (count) {
     argument selects among several different kinds of particle systems 
     and initial conditions.
     */
-
-
     // ! force-causing objects
     var fTmp = new CForcer();       // create a force-causing object, and
     fTmp.forceType = F_GRAV_E;      // set it to earth gravity, and
@@ -119,7 +117,8 @@ PartSys.prototype.initBouncy2D = function (count) {
     this.grav = 9.832; //gravity constant
     this.resti = 1.0; //inelastic
     this.runMode = 3;
-    this.solvType = 1;
+    // this.solvType = 1;
+    this.solvType = SOLV_OLDGOOD;
     this.bounceType = 1;
 
     var j = 0;
@@ -196,7 +195,7 @@ PartSys.prototype.applyForces = function (s, fList) {
     /*
     a function that accepts a state variable and an array of force-applying objects (e.g. a Forcer prototype or class; then make an array of these objects), and applies them to the given state variable
     */
-   
+
     var j = 0;  // i==particle number; j==array index for i-th particle
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
         s[j + PART_X_FTOT] = 0.0;
@@ -205,12 +204,9 @@ PartSys.prototype.applyForces = function (s, fList) {
     }
     for (var k = 0; k < fList.length; k++) {  // iterate through every cForce
         if (fList[k].forceType <= 0) { // ignore F_NONE or temporarily disabled CForcer
-            continue;       
+            continue;
         }
-        if (fList[k].partCount != 0) {  // does this force apply to a set of particles 
-            // stored sequentially in the state variable?
-            // Yes. Find m,mmax for those particles.
-            // (Recall: partCount = 0 means this forcer affects only 2 particles (e0,e1)
+        if (fList[k].partCount != 0) {
             var m = fList[k].partFirst;     // particle # for 1st one affected;
             var mmax = this.partCount;      // total number of particles in state s
             if (fList[k].partCount > 0) {    // did forcer specify HOW MANY particles?
@@ -265,6 +261,37 @@ PartSys.prototype.applyForces = function (s, fList) {
     } // for(k=0...)
 }
 
+PartSys.prototype.dotFinder = function (dest, src) {
+    //==============================================================================
+    // fill the already-existing 'dest' variable (a float32array) with the 
+    // time-derivative of given state 'src'.  
+
+    var invMass;  // inverse mass
+    var j = 0;  // i==particle number; j==array index for i-th particle
+    for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+        dest[j + PART_XPOS] = src[j + PART_XVEL];   // position derivative = velocity
+        dest[j + PART_YPOS] = src[j + PART_YVEL];
+        dest[j + PART_ZPOS] = src[j + PART_ZVEL];
+        dest[j + PART_WPOS] = 0.0;                  // presume 'w' fixed at 1.0
+        // Use 'src' current force-accumulator's values (set by PartSys.applyForces())
+        // to find acceleration.  As multiply is FAR faster than divide, do this:
+        invMass = 1.0 / src[j + PART_MASS];   // F=ma, so a = F/m, or a = F(1/m);
+        dest[j + PART_XVEL] = src[j + PART_X_FTOT] * invMass;
+        dest[j + PART_YVEL] = src[j + PART_Y_FTOT] * invMass;
+        dest[j + PART_ZVEL] = src[j + PART_Z_FTOT] * invMass;
+        dest[j + PART_X_FTOT] = 0.0;  // we don't know how force changes with time;
+        dest[j + PART_Y_FTOT] = 0.0;  // presume it stays constant during timestep.
+        dest[j + PART_Z_FTOT] = 0.0;
+        dest[j + PART_R] = 0.0;       // color doesn't change with time.
+        dest[j + PART_G] = 0.0;
+        dest[j + PART_B] = 0.0;
+        dest[j + PART_MASS] = 0.0;    // we don't know how these change with time;
+        dest[j + PART_DIAM] = 0.0;    // presume they stay constant during timestep.   
+        dest[j + PART_RENDMODE] = 0.0;
+        dest[j + PART_AGE] = 0.0;
+    }
+}
+
 PartSys.prototype.render = function (g_modelMatrix, g_viewProjMatrix) { //finally drawing🙏
     if (this.isReady() == false) {
         console.log(
@@ -293,15 +320,9 @@ PartSys.prototype.solver = function () {
     creates s2 contents by approximating integration of s1 over one one timestep.
     */
     switch (this.solvType) {
-        case 0: // EXPLICIT euler s2 = s1 + s1dot*h
-            this.swap();
-            var j = 0;
-            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                g_partA.s2[j + PART_XPOS] += g_partA.s2[j + PART_XVEL] * (g_timeStep * 0.001);
-                g_partA.s2[j + PART_YPOS] += g_partA.s2[j + PART_YVEL] * (g_timeStep * 0.001);
-                g_partA.s2[j + PART_YVEL] -= g_partA.grav * (g_timeStep * 0.001);
-                g_partA.s2[j + PART_XVEL] *= g_partA.drag;
-                g_partA.s2[j + PART_YVEL] *= g_partA.drag;
+        case SOLV_EULER: // EXPLICIT euler s2 = s1 + s1dot*h
+            for (var n = 0; i < this.s1.length; n++) {
+                this.s2[n] = this.s1[n] + this.s1dot[n] * (g_timeStep * 0.001);
             }
             break;
         case 1: // IMPLICIT or 'reverse time' solver
@@ -315,7 +336,20 @@ PartSys.prototype.solver = function () {
                 this.s2[j + PART_XPOS] += this.s2[j + PART_XVEL] * (g_timeStep * 0.001);
                 this.s2[j + PART_YPOS] += this.s2[j + PART_YVEL] * (g_timeStep * 0.001);
             }
-
+            break;
+        case SOLV_OLDGOOD:
+            // this.swap();
+            var j = 0;
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                this.s2[j + PART_YVEL] -= this.grav * (g_timeStep * 0.001);
+                this.s2[j + PART_XVEL] *= this.drag;
+                this.s2[j + PART_YVEL] *= this.drag;
+                this.s2[j + PART_ZVEL] *= this.drag;
+                // convert g_timeStep from milliseconds to seconds!
+                this.s2[j + PART_XPOS] += this.s2[j + PART_XVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_YPOS] += this.s2[j + PART_YVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_ZPOS] += this.s2[j + PART_YVEL] * (g_timeStep * 0.001);
+            }
             break;
         default:
             console.log('?!?! unknown solver: g_partA.solvType==' + this.solvType);
@@ -437,7 +471,6 @@ PartSys.prototype.doConstraints = function () {
         return;
     }
 }
-
 
 PartSys.prototype.swap = function () {
     /*

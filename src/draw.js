@@ -3,13 +3,16 @@
 function drawParticle(g_modelMatrix, g_viewProjMatrix) {
     g_partA.switchToMe();
     if (g_partA.runMode > 1) { // 0=reset; 1= pause; 2=step; 3=run
-        if(g_partA.runMode == 2){
-            g_partA.runMode=1;
-        } 		
-        g_partA.solver();  
-        g_partA.doConstraints(); 
+        if (g_partA.runMode == 2) {
+            g_partA.runMode = 1;
+        }
+        g_partA.applyForces(g_partA.s1, g_partA.forceList);  // find current net force on each particle
+        g_partA.dotFinder(g_partA.s1dot, g_partA.s1); // find time-derivative s1dot from s1;
+        g_partA.render(g_modelMatrix, g_viewProjMatrix);   // transfer current state to VBO, set uniforms, draw it!
+        g_partA.solver();         // find s2 from s1 & related states.
+        g_partA.doConstraints();  // Apply all constraints.  s2 is ready!
+        g_partA.swap();           // Make s2 the new current state
     }
-    g_partA.render(g_modelMatrix, g_viewProjMatrix);
 }
 
 function drawAll([grid, plane, sphere_test, sphere]) {

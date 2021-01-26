@@ -13,10 +13,11 @@ References: besides the inline links in index.html, the code is modified from
     Done: object oriented
     Done: showing 2 particles
     Done: debug why multiple ball not moving correctly
-    ? Doing: dotFinder(), s1dot
-    ? Doing: applyAllForces(), 
+    * Almost Done: dotFinder(), s1dot
+    * Almost Done: applyAllForces(), 
     TODO: 3D movement
     TODO: debug why other objects got impacted by # of particles and perhaps bufferSubData 
+    TODO:  impliment other solver
 
     ! need testing/debugging: 
         buffer overflow for plane???
