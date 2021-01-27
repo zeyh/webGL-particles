@@ -12,17 +12,17 @@ References: besides the inline links in index.html, the code is modified from
     Done: 123 key to change runcode mode & running state
     Done: object oriented
     Done: showing 2 particles
-    Done: debug why multiple ball not moving correctly
+    Done: debug why multiple ball not moving correctly updating&solving sequence not right
+    Done: debug buffer overflow for plane, modelMatrix not pushing correctly
     * Almost Done: dotFinder(), s1dot
     * Almost Done: applyAllForces(), 
     TODO: 3D movement
-    TODO: debug why other objects got impacted by # of particles and perhaps bufferSubData 
-    TODO:  impliment other solver
+    TODO: impliment other solver
+    TODO: add shader to particles
 
     ! need testing/debugging: 
-        buffer overflow for plane???
         scale the dots too, seems that particle points are not scaled when mouse scrolling
-
+        shift+r not appearing, but 
     ! missing: user controls:
         --f/F fountain motion
         --b/B key to change bounce scheme (06)
@@ -33,7 +33,6 @@ References: besides the inline links in index.html, the code is modified from
         --d/D key to adjust drag up or down;
         --g/G key to adjust gravity up or down.
         ! adding all above to on screen instructions
-
     ! 🐞: draggable blin-phong light direction: mainly black
 */
 
