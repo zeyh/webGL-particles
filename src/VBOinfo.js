@@ -18,10 +18,10 @@ var plane_normals = new Float32Array([
     0, 0, 1,
 ]);
 var plane_colors = new Float32Array([   
-    0.3, 0.3, 0.3,
-    0.3, 0.3, 0.3,
-    0.3, 0.3, 0.3,
-    0.3, 0.3, 0.3,
+    0.1, 0.1, 0.1,
+    0.1, 0.1, 0.1,
+    0.1, 0.1, 0.1,
+    0.1, 0.1, 0.1,
 ]);
 var plane_indices = new Uint8Array([
     0,1,2,
@@ -148,8 +148,8 @@ function generate_gridVBOinfo(xymax){
     var xcount = 100; // # of lines to draw in x,y to make the grid.
     var ycount = 100;
     // var xymax = 50.0; // grid size; extends to cover +/-xymax in x and y.
-    var xColr = new Float32Array([1.0, 1.0, 0.3]); // bright yellow
-    var yColr = new Float32Array([0.5, 1.0, 0.5]); // bright green.
+    var xColr = new Float32Array([0.3, 0.3, 0.3]); // bright yellow
+    var yColr = new Float32Array([0.8, 0.8, 0.8]); // bright green.
 
     var vertices = new Float32Array(floatsPerVertex * 2 * (xcount + ycount));
     var xgap = xymax / (xcount - 1); // HALF-spacing between lines in x,y;

@@ -302,72 +302,89 @@ function initWindow() {
 // ref: https://keycode.info/ http://learnwebgl.brown37.net/07_cameras/camera_rotating_motion.html
 function key123(ev) {
     if (ev.keyCode == 48) { // 0 reset
-        g_partA.runMode = 0;
+        for (let index = 0; index < g_particleNum; index++) {
+            g_particleArray[index].runMode = 0;
+        }
     }
     else if (ev.keyCode == 49) { // 1 pause
-        g_partA.runMode = 1;
+        for (let index = 0; index < g_particleNum; index++) {
+            g_particleArray[index].runMode = 1;
+        }
     }
     else if (ev.keyCode == 50) { // 2 step
-        g_partA.runMode = 2;
+        for (let index = 0; index < g_particleNum; index++) {
+            g_particleArray[index].runMode = 2;
+        }
     }
     else if (ev.keyCode == 51) { // 3 run
-        g_partA.runMode = 3;
+        for (let index = 0; index < g_particleNum; index++) {
+            g_particleArray[index].runMode = 3;
+        }
     }
     else if (ev.keyCode == 82) { //R for adding velocity
         if (ev.shiftKey == false) {   // 'r' key: SOFT reset; boost velocity only
-            console.log("r being pressed", g_partA.INIT_VEL)
-            g_partA.runMode = 3;  // RUN!
-            var j = 0; // array index for particle i
-            for (var i = 0; i < g_partA.partCount; i += 1, j += PART_MAXVAR) {
-                g_partA.roundRand();
-                if (g_partA.s2[j + PART_XVEL] > 0.0) {
-                    g_partA.s2[j + PART_XVEL] += 0.5 + 0.4 * g_partA.randX * g_partA.INIT_VEL;
-                }
-                else {
-                    g_partA.s2[j + PART_XVEL] -= 0.5 + 0.4 * g_partA.randX * g_partA.INIT_VEL;
-                }
+            console.log("r being pressed");
 
-                if (g_partA.s2[j + PART_YVEL] > 0.0) {
-                    g_partA.s2[j + PART_YVEL] += 1.7 + 0.4 * g_partA.randY * g_partA.INIT_VEL;
-                }
-                else {
-                    g_partA.s2[j + PART_YVEL] -= 1.7 + 0.4 * g_partA.randY * g_partA.INIT_VEL;
-                }
+            for (let index = 0; index < g_particleNum; index++) {
 
-                if (g_partA.s2[j + PART_ZVEL] > 0.0) {
-                    g_partA.s2[j + PART_ZVEL] += 0.5 + 0.4 * g_partA.randZ * g_partA.INIT_VEL;
-                }
-                else {
-                    g_partA.s2[j + PART_ZVEL] -= 0.5 + 0.4 * g_partA.randZ * g_partA.INIT_VEL;
+                g_particleArray[index].runMode = 3;  // RUN!
+                var j = 0; // array index for particle i
+                for (var i = 0; i < g_particleArray[index].partCount; i += 1, j += PART_MAXVAR) {
+                    g_particleArray[index].roundRand();
+                    if (g_particleArray[index].s2[j + PART_XVEL] > 0.0) {
+                        g_particleArray[index].s2[j + PART_XVEL] += 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+                    }
+                    else {
+                        g_particleArray[index].s2[j + PART_XVEL] -= 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+                    }
+
+                    if (g_particleArray[index].s2[j + PART_YVEL] > 0.0) {
+                        g_particleArray[index].s2[j + PART_YVEL] += 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
+                    }
+                    else {
+                        g_particleArray[index].s2[j + PART_YVEL] -= 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
+                    }
+
+                    if (g_particleArray[index].s2[j + PART_ZVEL] > 0.0) {
+                        g_particleArray[index].s2[j + PART_ZVEL] += 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+                    }
+                    else {
+                        g_particleArray[index].s2[j + PART_ZVEL] -= 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+                    }
                 }
             }
         }
         else {      // HARD reset: position AND velocity, BOTH state vectors:
-            console.log("shift+r being pressed", g_partA.INIT_VEL)
-            g_partA.runMode = 0;			
-            var j = 0; 
-            for (var i = 0; i < g_partA.partCount; i += 1, j += PART_MAXVAR) {
-                g_partA.roundRand();
-                g_partA.s1[j + PART_XPOS] = -0.9;      // lower-left corner of CVV
-                g_partA.s1[j + PART_YPOS] = -0.9;      // with a 0.1 margin
-                g_partA.s1[j + PART_ZPOS] = 0.0;
-                g_partA.s1[j + PART_XVEL] = 3.7 + 0.4 * g_partA.randX * g_partA.INIT_VEL;
-                g_partA.s1[j + PART_YVEL] = 3.7 + 0.4 * g_partA.randY * g_partA.INIT_VEL; 
-                g_partA.s1[j + PART_ZVEL] = 3.7 + 0.4 * g_partA.randZ * g_partA.INIT_VEL;
-                g_partA.s2.set(g_partA.s1);
-            } 
+            console.log("shift+r being pressed");
+
+            for (let index = 0; index < g_particleNum; index++) {
+                g_particleArray[index].runMode = 0;
+                var j = 0;
+                for (var i = 0; i < g_particleArray[index].partCount; i += 1, j += PART_MAXVAR) {
+                    g_particleArray[index].roundRand();
+                    g_particleArray[index].s1[j + PART_XPOS] = -0.9;      // lower-left corner of CVV
+                    g_particleArray[index].s1[j + PART_YPOS] = -0.9;      // with a 0.1 margin
+                    g_particleArray[index].s1[j + PART_ZPOS] = 0.0;
+                    g_particleArray[index].s1[j + PART_XVEL] = 3.7 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+                    g_particleArray[index].s1[j + PART_YVEL] = 3.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
+                    g_particleArray[index].s1[j + PART_ZVEL] = 3.7 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+                    g_particleArray[index].s2.set(g_particleArray[index].s1);
+                }
+            }
 
         }
 
     }
     else if (ev.keyCode == 70) { //F for change solver 
-        if (g_partA.solvType == 0) {
-            console.log("change to implicit solver");
-            g_partA.solvType = 1;
-        }
-        else {
-            console.log("change to explicit solver");
-            g_partA.solvType = 0;
+        for (let index = 0; index < g_particleNum; index++) {
+            if (g_particleArray[index].solvType == 0) {
+                console.log("change to implicit solver");
+                g_particleArray[index].solvType = 1;
+            }
+            else {
+                console.log("change to explicit solver");
+                g_particleArray[index].solvType = 0;
+            }
         }
     }
 }

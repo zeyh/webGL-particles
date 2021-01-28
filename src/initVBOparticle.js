@@ -97,7 +97,7 @@ PartSys.prototype.initShader = function (vertSrc, fragSrc) {
     }
 }
 
-PartSys.prototype.initBouncy2D = function (count) {
+PartSys.prototype.initBouncy3D = function (count) {
     /*
     argument selects among several different kinds of particle systems 
     and initial conditions.

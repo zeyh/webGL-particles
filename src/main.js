@@ -14,16 +14,15 @@ References: besides the inline links in index.html, the code is modified from
     Done: showing 2 particles
     Done: debug why multiple ball not moving correctly updating&solving sequence not right
     Done: debug buffer overflow for plane, modelMatrix not pushing correctly
-    Done: dotFinder(), s1dot, 
-    Done: 
+    Done: dotFinder(), s1dot, applyForce
+    Done: multiple 3D bouncy movement with color with R control
 
-    ? Doing: 3D init movement
+    ? Doing: burning flame within a cube [600+]
+    Todo[1.5d]: burning flame within a cube [600+]
 
     Todo[1d]: limit particle in shapes[box, sphere, cylinder]
     Todo[2d]: tornados within cylinder [300+]
-    
     Todo[2d]: g_partA: boids with a) separation, b) cohesion, c) alignment, and d) evasion
-    Todo[1.5d]: burning flame within a cube [600+]
     Todo[2d]: mass-spring like linked systems with interactions (cloth-like)
     Todo[2d]: 3D Explicit & implicit solvers*9
     Todo[2d]: fluids
@@ -32,7 +31,7 @@ References: besides the inline links in index.html, the code is modified from
     Todo[0.3d]: onscreen instructions
 
     FIXME: 
-        after pressed anyother key, pressing R will not continue running
+        after pressed f key to change solver, pressing R will not continue running
 
     ! need testing/clearify: 
         run together at ‘interactive’ rates (~3 frames/second (FPS))?
@@ -57,14 +56,15 @@ var canvas;
 var gl;	
 var g_viewProjMatrix;
 var g_modelMatrix;
-var shadingScheme;
-var vboArray;
+var g_shadingScheme;
+var g_vboArray;
 
 var g_timeStep = 1000.0/60.0;			// current timestep in milliseconds (init to 1/60th sec) 
 var g_timeStepMin = g_timeStep;   //holds min,max timestep values since last keypress.
 var g_timeStepMax = g_timeStep;
 
-var g_partA;
+var g_particleNum = 2;
+var g_particleArray = [];
 
 function initVBOs(currScheme){
     var grid = new VBO_genetic(diffuseVert, diffuseFrag, grid_vertices, grid_colors, grid_normals, null, 0);
@@ -76,11 +76,19 @@ function initVBOs(currScheme){
     var sphere_test = new VBO_genetic(currScheme[0], currScheme[1], sphere_vertices, sphere_colors, sphere_normals, sphere_indices, currScheme[2]);
     sphere_test.init();
 
-    g_partA = new PartSys();
-    g_partA.initBouncy2D(600);
-    g_partA.initShader(particleVert, particleFrag);
-    
-    vboArray = [grid, plane, sphere_test, sphere];
+    globalThis.BOUNCYBALL = 0;
+    var particle1 = new PartSys();
+    particle1.initBouncy3D(600);
+    particle1.initShader(particleVert, particleFrag);
+    g_particleArray[BOUNCYBALL] = particle1;
+
+    globalThis.TEST = 1;
+    var particle2 = new PartSys();
+    particle2.initBouncy3D(20);
+    particle2.initShader(particleVert, particleFrag);
+    g_particleArray[TEST] = particle2;
+
+    g_vboArray = [grid, plane, sphere_test, sphere];
 }
 function main() {
     console.log("I'm in main.js right now...");
@@ -114,12 +122,12 @@ function main() {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Set blending function conflict with shadow...?
     g_modelMatrix = new Matrix4(); 
 
-    shadingScheme = { //[plane, cube, cube2, sphere, sphere2, cube3] 
+    g_shadingScheme = { //[plane, cube, cube2, sphere, sphere2, cube3] 
         0:[PhongPhongVert,PhongPhongFrag,5],
         1:[draggableBlinnPhongVert,draggableBlinnPhongFrag,3],
     };
 
-    initVBOs(shadingScheme[0]);    
+    initVBOs(g_shadingScheme[0]);    
 
     var tick = function () {
         canvas.width = window.innerWidth * 1; //resize canvas
@@ -149,7 +157,7 @@ function main() {
         }
 
         // ! draw
-        drawAll(vboArray);
+        drawAll(g_vboArray);
         window.requestAnimationFrame(tick, canvas);
 
     }
@@ -341,7 +349,7 @@ var diffuseVert = // * not used but could be used with lightSpec 0
     "  vec3 lightVec = vec3(0.1, 0.5, 0.7);\n" +
     "  gl_Position = u_MvpMatrix * a_Position;\n" +
     "  vec4 vertexPosition = u_ModelMatrix * a_Position;\n" +
-    "  v_Color = vec4(0.7*a_Color + 0.3*dot(normVec,lightVec), 1.0);\n" +
+    "  v_Color = vec4(0.999*a_Color + 0.001*dot(normVec,lightVec), 1.0);\n" +
     "}\n";
 
 var diffuseFrag = // * not used but could be used with lightSpec 0
