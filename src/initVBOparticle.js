@@ -61,7 +61,8 @@ PartSys.prototype.initShader = function (vertSrc, fragSrc) {
     // ! init attribute locations 
     this.a_PosLoc = gl.getAttribLocation(this.shaderLoc, "a_Position");
     this.u_MvpMatLoc = gl.getUniformLocation(this.shaderLoc, "u_MvpMatrix");
-    if (this.a_PosLoc < 0 || !this.u_MvpMatLoc) {
+    this.a_ColrLoc = gl.getAttribLocation(this.shaderLoc, "a_Color");
+    if (this.a_PosLoc < 0 || !this.u_MvpMatLoc || this.a_ColrLoc < 0 ) {
         console.log(
             this.constructor.name +
             ".init() failed to get the GPU location of attributes"
@@ -342,7 +343,7 @@ PartSys.prototype.solver = function () {
                 // convert g_timeStep from milliseconds to seconds!
                 this.s2[j + PART_XPOS] += this.s2[j + PART_XVEL] * (g_timeStep * 0.001);
                 this.s2[j + PART_YPOS] += this.s2[j + PART_YVEL] * (g_timeStep * 0.001);
-                this.s2[j + PART_ZPOS] += this.s2[j + PART_YVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_ZPOS] += this.s2[j + PART_ZVEL] * (g_timeStep * 0.001);
             }
             break;
         default:

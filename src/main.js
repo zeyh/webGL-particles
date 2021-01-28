@@ -1,8 +1,8 @@
 /*
 Jan 24, 2021
 References: besides the inline links in index.html, the code is modified from 
-    [Textbook] ...
-    [Canvas Starter Code] ...
+    [Textbook] Physics-based animations...
+    [Canvas Starter Code] for CS351-2
     [Previous projects] ProjectC from 351-1
 */
 /*
@@ -14,15 +14,30 @@ References: besides the inline links in index.html, the code is modified from
     Done: showing 2 particles
     Done: debug why multiple ball not moving correctly updating&solving sequence not right
     Done: debug buffer overflow for plane, modelMatrix not pushing correctly
-    * Almost Done: dotFinder(), s1dot
-    * Almost Done: applyAllForces(), 
-    TODO: 3D movement
-    TODO: impliment other solver
-    TODO: add shader to particles
+    Done: dotFinder(), s1dot, 
+    Done: 
 
-    ! need testing/debugging: 
-        scale the dots too, seems that particle points are not scaled when mouse scrolling
-        shift+r not appearing, but 
+    ? Doing: 3D init movement
+
+    Todo: tornados within cylinder [300+]
+    Todo: g_partA: boids with a) separation, b) cohesion, c) alignment, and d) evasion
+    Todo: burning flame within a cube [600+]
+    Todo: limit particle in shapes[box, sphere, cylinder]
+    Todo: mass-spring like linked systems with interactions (cloth-like)
+    Todo: 3D Explicit & implicit solvers*9
+    Todo: fluids
+    Todo: textures 
+    Todo: verify camera perspective and make it more intuitive (‘strafe’ perpendicular)
+    Todo: onscreen instructions
+
+    FIXME: 
+        after pressed anyother key, pressing R will not continue running
+
+    ! need testing/clearify: 
+        run together at ‘interactive’ rates (~3 frames/second (FPS))?
+        other constraint type ?
+        novel rendering methods ?
+
     ! missing: user controls:
         --f/F fountain motion
         --b/B key to change bounce scheme (06)
@@ -32,7 +47,6 @@ References: besides the inline links in index.html, the code is modified from
         --c/C key to toggle WebGL screen-clearing in draw() fcn. isClear
         --d/D key to adjust drag up or down;
         --g/G key to adjust gravity up or down.
-        ! adding all above to on screen instructions
     ! 🐞: draggable blin-phong light direction: mainly black
 */
 
@@ -63,7 +77,7 @@ function initVBOs(currScheme){
 
     g_partA = new PartSys();
     g_partA.initShader(particleVert, particleFrag);
-    g_partA.initBouncy2D(30);
+    g_partA.initBouncy2D(300);
     
     vboArray = [grid, plane, sphere_test, sphere];
 }
@@ -171,7 +185,7 @@ var draggableBlinnPhongVert =
     "  v_Kd = u_MatlSet[0].diff; \n" + // find per-pixel diffuse reflectance from per-vertex
     "}\n";
 
-var draggableBlinnPhongFrag =  // ! TODO: add second head light
+var draggableBlinnPhongFrag =  // ! Todo: add second head light
     'precision highp float;\n' +
     'precision highp int;\n' +
   
@@ -338,9 +352,11 @@ var diffuseFrag = // * not used but could be used with lightSpec 0
     "  gl_FragColor = v_Color;\n" +
     "}\n";
 
+
 var particleVert = 
     'precision mediump float;\n' +			// req'd in OpenGL ES if we use 'float'
     'uniform   int  u_runMode; \n' +			// particle system state: 
+    "attribute vec3 a_Color;\n" +
     'attribute vec4 a_Position;\n' +
     'varying   vec4 v_Color; \n' +
     "uniform   mat4 u_MvpMatrix;\n" +
@@ -354,7 +370,7 @@ var particleVert =
     '    v_Color = vec4(0.6, 0.6, 0.0, 1.0); \n' +	// yellow: 1==pause
     '    }  \n' +
     '  else if(u_runMode == 2) { \n' +    
-    '    v_Color = vec4(0.6, 0.6, 0.6, 1.0); \n' +	// white: 2==step
+    '    v_Color = vec4(0.3, 0.8, 0.3, 1.0); \n' +	// white: 2==step
     '    } \n' +
     '  else { \n' +
     '    v_Color = vec4(240/255, 255/255, 100/255, 1.0); \n' +	// green: >3==run
@@ -366,7 +382,7 @@ var particleFrag =
     'varying vec4 v_Color; \n' +
     'void main() {\n' +
     '  float dist = distance(gl_PointCoord, vec2(0.5, 0.5)); \n' +
-    '  if(dist < 0.5) { \n' +	
+    '  if(dist < 0.1) { \n' +	
       '  	gl_FragColor = vec4((1.0-2.0*dist)*v_Color.rgb, 1.0);\n' +
       '  } else { discard; }\n' +
     '}\n';
