@@ -61,15 +61,40 @@ PartSys.prototype.initShader = function (vertSrc, fragSrc) {
     // ! init attribute locations 
     this.a_PosLoc = gl.getAttribLocation(this.shaderLoc, "a_Position");
     this.u_MvpMatLoc = gl.getUniformLocation(this.shaderLoc, "u_MvpMatrix");
-    this.a_ColrLoc = gl.getAttribLocation(this.shaderLoc, "a_Color");
-    if (this.a_PosLoc < 0 || !this.u_MvpMatLoc || this.a_ColrLoc < 0 ) {
+    if (this.a_PosLoc < 0 || !this.u_MvpMatLoc) {
         console.log(
             this.constructor.name +
-            ".init() failed to get the GPU location of attributes"
+            ".init() failed to get the GPU location of [a_pos, mvpMatrix]attributes"
         );
         return -1; // error exit.
     }
 
+    // ! [Vertex] buffer
+    this.vboID = gl.createBuffer();
+    if (!this.vboID) {
+        console.log('PartSys.init() Failed to create the VBO object in the GPU');
+        return -1;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vboID);
+    gl.bufferData(gl.ARRAY_BUFFER, this.s1, gl.DYNAMIC_DRAW);
+
+    this.a_PositionID = gl.getAttribLocation(this.shaderLoc, 'a_Position');
+    if (this.a_PositionID < 0) {
+        console.log('PartSys.init() Failed to get the storage location of a_Position');
+        return -1;
+    }
+
+    this.a_ColorID = gl.getAttribLocation(this.shaderLoc, "a_Color");
+    if (this.a_ColorID < 0) {
+        console.log('PartSys.init() Failed to get a_Color variable location');
+        return;
+    }
+
+    this.u_runModeID = gl.getUniformLocation(this.shaderLoc, 'u_runMode');
+    if (!this.u_runModeID) {
+        console.log('PartSys.init() Failed to get u_runMode variable location');
+        return;
+    }
 }
 
 PartSys.prototype.initBouncy2D = function (count) {
@@ -132,6 +157,9 @@ PartSys.prototype.initBouncy2D = function (count) {
         this.s1[j + PART_YPOS] = -0.8 + 0.1 * this.randY;
         this.s1[j + PART_ZPOS] = -0.8 + 0.1 * this.randZ;
         this.s1[j + PART_WPOS] = 1.0;
+        this.s1[j + PART_R] = Math.abs(this.randX);
+        this.s1[j + PART_G] = Math.abs(this.randY);
+        this.s1[j + PART_B] = 0.9;
         this.roundRand();
         this.s1[j + PART_XVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randX);
         this.s1[j + PART_YVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randY);
@@ -142,28 +170,8 @@ PartSys.prototype.initBouncy2D = function (count) {
         this.s1[j + PART_AGE] = 30 + 100 * Math.random();
         this.s2.set(this.s1);
     }
-
-    // ! [Vertex] buffer
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
-    this.vboID = gl.createBuffer();
-    if (!this.vboID) {
-        console.log('PartSys.init() Failed to create the VBO object in the GPU');
-        return -1;
-    }
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.vboID);
-    gl.bufferData(gl.ARRAY_BUFFER, this.s1, gl.DYNAMIC_DRAW);
 
-    this.a_PositionID = gl.getAttribLocation(gl.program, 'a_Position');
-    if (this.a_PositionID < 0) {
-        console.log('PartSys.init() Failed to get the storage location of a_Position');
-        return -1;
-    }
-
-    this.u_runModeID = gl.getUniformLocation(gl.program, 'u_runMode');
-    if (!this.u_runModeID) {
-        console.log('PartSys.init() Failed to get u_runMode variable location');
-        return;
-    }
 }
 
 PartSys.prototype.switchToMe = function () {
@@ -173,9 +181,15 @@ PartSys.prototype.switchToMe = function () {
     // ! bindBuffer vertexAttribPointer enableVertexAttribArray
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vboID); // ! 👈 finally debugged......
+    
     gl.vertexAttribPointer(this.a_PositionID, 4, gl.FLOAT, false,
         PART_MAXVAR * this.FSIZE, PART_XPOS * this.FSIZE);
     gl.enableVertexAttribArray(this.a_PositionID);
+
+    gl.vertexAttribPointer(this.a_ColorID, 4, gl.FLOAT, false,   
+        PART_MAXVAR*this.FSIZE, PART_R * this.FSIZE); 
+    gl.enableVertexAttribArray(this.a_ColorID);
+
 }
 
 PartSys.prototype.isReady = function () { //very brief sanity check
@@ -501,7 +515,7 @@ PartSys.prototype.doConstraints = function () {
                 this.s2[j + PART_ZPOS] = 0.9; // 1) resolve contact: put particle at wall.
                 this.s2[j + PART_ZVEL] = this.s1[j + PART_ZVEL];  // 2a) undo velocity change:
                 this.s2[j + PART_ZVEL] *= this.drag;			        // 2b) apply drag:
- 			
+
                 if (this.s2[j + PART_ZVEL] > 0.0)
                     this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL]; // need sign change--bounce!
                 else

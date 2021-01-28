@@ -19,16 +19,17 @@ References: besides the inline links in index.html, the code is modified from
 
     ? Doing: 3D init movement
 
-    Todo: tornados within cylinder [300+]
-    Todo: g_partA: boids with a) separation, b) cohesion, c) alignment, and d) evasion
-    Todo: burning flame within a cube [600+]
-    Todo: limit particle in shapes[box, sphere, cylinder]
-    Todo: mass-spring like linked systems with interactions (cloth-like)
-    Todo: 3D Explicit & implicit solvers*9
-    Todo: fluids
-    Todo: textures 
-    Todo: verify camera perspective and make it more intuitive (‘strafe’ perpendicular)
-    Todo: onscreen instructions
+    Todo[1d]: limit particle in shapes[box, sphere, cylinder]
+    Todo[2d]: tornados within cylinder [300+]
+    
+    Todo[2d]: g_partA: boids with a) separation, b) cohesion, c) alignment, and d) evasion
+    Todo[1.5d]: burning flame within a cube [600+]
+    Todo[2d]: mass-spring like linked systems with interactions (cloth-like)
+    Todo[2d]: 3D Explicit & implicit solvers*9
+    Todo[2d]: fluids
+    Todo[1d]: textures 
+    Todo[0.7d]: verify camera perspective and make it more intuitive (‘strafe’ perpendicular)
+    Todo[0.3d]: onscreen instructions
 
     FIXME: 
         after pressed anyother key, pressing R will not continue running
@@ -76,8 +77,8 @@ function initVBOs(currScheme){
     sphere_test.init();
 
     g_partA = new PartSys();
+    g_partA.initBouncy2D(600);
     g_partA.initShader(particleVert, particleFrag);
-    g_partA.initBouncy2D(300);
     
     vboArray = [grid, plane, sphere_test, sphere];
 }
@@ -356,7 +357,7 @@ var diffuseFrag = // * not used but could be used with lightSpec 0
 var particleVert = 
     'precision mediump float;\n' +			// req'd in OpenGL ES if we use 'float'
     'uniform   int  u_runMode; \n' +			// particle system state: 
-    "attribute vec3 a_Color;\n" +
+    "attribute vec4 a_Color;\n" +
     'attribute vec4 a_Position;\n' +
     'varying   vec4 v_Color; \n' +
     "uniform   mat4 u_MvpMatrix;\n" +
@@ -373,7 +374,7 @@ var particleVert =
     '    v_Color = vec4(0.3, 0.8, 0.3, 1.0); \n' +	// white: 2==step
     '    } \n' +
     '  else { \n' +
-    '    v_Color = vec4(240/255, 255/255, 100/255, 1.0); \n' +	// green: >3==run
+    '    v_Color = a_Color; \n' +	// green: >3==run
     '		 } \n' +
     '} \n';
 

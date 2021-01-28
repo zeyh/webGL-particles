@@ -52,13 +52,13 @@ function drawAll([grid, plane, sphere_test, sphere]) {
         grid.draw(g_modelMatrix, g_viewProjMatrix);
         g_modelMatrix = popMatrix();
     } else {
-        pushMatrix(g_modelMatrix);
-        g_modelMatrix.rotate(-90.0, 1, 0, 0);
-        g_modelMatrix.translate(0.0, 0.0, -0.6);
-        g_modelMatrix.scale(0.4, 0.4, 0.4);
-        plane.switchToMe();
-        plane.draw(g_modelMatrix, g_viewProjMatrix);
-        g_modelMatrix = popMatrix();
+        // pushMatrix(g_modelMatrix);
+        // g_modelMatrix.rotate(-90.0, 1, 0, 0);
+        // g_modelMatrix.translate(0.0, 0.0, -0.6);
+        // g_modelMatrix.scale(0.4, 0.4, 0.4);
+        // plane.switchToMe();
+        // plane.draw(g_modelMatrix, g_viewProjMatrix);
+        // g_modelMatrix = popMatrix();
     }
 
 }
