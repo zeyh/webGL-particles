@@ -17,14 +17,15 @@ References: besides the inline links in index.html, the code is modified from
     Done: dotFinder(), s1dot, applyForce
     Done: multiple 3D bouncy movement with color with R control
 
+    ? Doing: fix camera viewpoint/aim point
     ? Doing: burning flame within a cube [600+]
     Todo[1.5d]: burning flame within a cube [600+]
+    Todo[2d]: 3D Explicit & implicit solvers*9
 
     Todo[1d]: limit particle in shapes[box, sphere, cylinder]
     Todo[2d]: tornados within cylinder [300+]
     Todo[2d]: g_partA: boids with a) separation, b) cohesion, c) alignment, and d) evasion
     Todo[2d]: mass-spring like linked systems with interactions (cloth-like)
-    Todo[2d]: 3D Explicit & implicit solvers*9
     Todo[2d]: fluids
     Todo[1d]: textures 
     Todo[0.7d]: verify camera perspective and make it more intuitive (‘strafe’ perpendicular)

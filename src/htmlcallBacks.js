@@ -113,8 +113,6 @@ function controlSwitch4() {
     }
 }
 
-
-
 var reflectVal = [0.4, 1.0, 1.0, 0];
 var slider = document.querySelectorAll(".minislider");
 var sliderText = document.querySelectorAll(".miniSliderText");
@@ -140,8 +138,7 @@ function setColorSlider(index) {
     initVBOs(shadingScheme[g_schemeOpt]); //refresh vbo rendering
 }
 
-//https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
-function hexToRgb(hex) {
+function hexToRgb(hex) { //https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
     // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
     var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
     hex = hex.replace(shorthandRegex, function (m, r, g, b) {
@@ -157,8 +154,7 @@ function hexToRgb(hex) {
 }
 
 
-
-// ===================================for dat-gui setup
+// ! ===================================for dat-gui setup
 var params = {
     left: -1.00,
     right: 1.00,
@@ -235,7 +231,7 @@ function flyForward() {
     }
 }
 
-// ===================================for individual control button
+// ! ===================================for individual control button
 function resizeCanvas(gl, arr, u_ProjMatrix, projMatrix, u_ViewMatrix, viewMatrix, u_ModelMatrix, modelMatrix) {
     canvas = document.getElementById('webgl');
     canvas.width = window.innerWidth * 1;
@@ -298,8 +294,10 @@ function initWindow() {
 
 
 
-// * ===================Keyboard event-handling Callbacks===========
+// ! ===================Keyboard event-handling Callbacks===========
 // ref: https://keycode.info/ http://learnwebgl.brown37.net/07_cameras/camera_rotating_motion.html
+
+
 function key123(ev) {
     if (ev.keyCode == 48) { // 0 reset
         for (let index = 0; index < g_particleNum; index++) {
@@ -389,28 +387,55 @@ function key123(ev) {
     }
 }
 
+function cameraDistance(){
+    /* calculate the euclidean distance with lookAt and eye*/
+    x = g_LookX - g_EyeX;
+    y = g_LookY - g_EyeY;
+    z = g_LookZ - g_EyeZ;
+    return  Math.sqrt(Math.pow(x,2)+ Math.pow(y,2)+Math.pow(z,2));
+}
+
 function keyAD(ev) {
-    if (ev.keyCode == 68) { // d
-        g_EyeX += 0.1 * g_speed;
-        g_LookX += 0.1 * g_speed;
-
-    } else if (ev.keyCode == 65) { // a
-        g_EyeX -= 0.1 * g_speed;
-        g_LookX -= 0.1 * g_speed;
-
+    let dist = cameraDistance();
+    let vec1 = [0,1,0];
+    let vec2 = [(g_LookX-g_EyeX)/dist,(g_LookY-g_EyeY)/dist,(g_LookZ-g_EyeZ)/dist];
+    let perpVec = math.cross(vec1, vec2); //perpendicular to forward direction
+    if (ev.keyCode == 65) { // a left
+        g_EyeX += 0.1 * g_speed * perpVec[0];
+        g_EyeY += 0.1 * g_speed * perpVec[1];
+        g_EyeZ += 0.1 * g_speed * perpVec[2];
+        g_LookX += 0.1 * g_speed * perpVec[0];
+        g_LookY += 0.1 * g_speed * perpVec[1];
+        g_LookZ += 0.1 * g_speed * perpVec[2];
+    } else if (ev.keyCode == 68) { // d right
+        g_EyeX -= 0.1 * g_speed * perpVec[0];
+        g_EyeY -= 0.1 * g_speed * perpVec[1];
+        g_EyeZ -= 0.1 * g_speed * perpVec[2];
+        g_LookX -= 0.1 * g_speed * perpVec[0];
+        g_LookY -= 0.1 * g_speed * perpVec[1];
+        g_LookZ -= 0.1 * g_speed * perpVec[2];
     } else { return; }
 }
 
 var g_fogDist = new Float32Array([55, 80]);
 function keyWS(ev) {
-    if (ev.keyCode == 83) { // w moving forward
-        g_EyeZ += 0.1 * g_speed;
-        g_LookZ += 0.1 * g_speed;
+    let dist = cameraDistance();
+    if (ev.keyCode == 87) { // s moving backward 
+        g_EyeX += 0.1 * g_speed * (g_LookX-g_EyeX)/dist;  //sin theta
+        g_EyeY += 0.1 * g_speed * (g_LookY-g_EyeY)/dist;
+        g_EyeZ += 0.1 * g_speed * (g_LookZ-g_EyeZ)/dist;
+        g_LookX += 0.1 * g_speed * (g_LookX-g_EyeX)/dist;
+        g_LookY += 0.1 * g_speed * (g_LookY-g_EyeY)/dist;
+        g_LookZ += 0.1 * g_speed * (g_LookZ-g_EyeZ)/dist;
         if (g_fogDist[1] > g_fogDist[0]) g_fogDist[1] -= 1; // ! change fog visibility
 
-    } else if (ev.keyCode == 87) { // s moving backward
-        g_EyeZ -= 0.1 * g_speed;
-        g_LookZ -= 0.1 * g_speed;
+    } else if (ev.keyCode == 83) { //  w moving forward
+        g_EyeX -= 0.1 * g_speed * (g_LookX-g_EyeX)/dist; 
+        g_EyeY -= 0.1 * g_speed * (g_LookY-g_EyeY)/dist;
+        g_EyeZ -= 0.1 * g_speed * (g_LookZ-g_EyeZ)/dist;
+        g_LookX -= 0.1 * g_speed * (g_LookX-g_EyeX)/dist;
+        g_LookY -= 0.1 * g_speed * (g_LookY-g_EyeY)/dist;
+        g_LookZ -= 0.1 * g_speed * (g_LookZ-g_EyeZ)/dist;
         g_fogDist[1] += 1; // ! change fog visibility
     } else { return; }
 }
@@ -450,23 +475,104 @@ function materialKeyPress(ev) {
             g_matlSel = (g_matlSel + 1) % MATL_DEFAULT;
             console.log(g_matlSel)// see materials_Ayerdi.js for list
             break;
-        // case 83: // UPPER-case 's' key:
-        //     matl0.K_shiny += 1.0;								// INCREASE shinyness, but with a
-        //     if(matl0.K_shiny > 128.0) matl0.K_shiny = 128.0;	// upper limit.
-        //     console.log('UPPERcase S: ++K_shiny ==', matl0.K_shiny,'\n');	
-        //     break;
-        // case 115:	// LOWER-case 's' key:
-        //     matl0.K_shiny += -1.0;								// DECREASE shinyness, but with a
-        //     if(matl0.K_shiny < 1.0) matl0.K_shiny = 1.0;		// lower limit.
-        //     console.log('lowercase s: --K_shiny ==', matl0.K_shiny, '\n');
-        //     break;
         default:
             break;
     }
 }
 
+// for listening a key is being pressed/released: https://stackoverflow.com/questions/16345870/keydown-keyup-events-for-specific-keys
+var g_isCameraFixed = true;
+const cameraAction = {
+    fixCamera() {
+        g_isCameraFixed = true;
+        console.log("need camera fixed");
+    },
+    changeCamera() {
+        g_isCameraFixed = false;
+        console.log("need alter angles");
+    },
+}
+const keyAction = {
+    Alt: { keydown: cameraAction.changeCamera, keyup: cameraAction.fixCamera },
+    Meta: { keydown: cameraAction.changeCamera, keyup: cameraAction.fixCamera },
+}
+const keyHandler = (ev) => {
+    if (ev.repeat) return;
+    if (!(ev.key in keyAction) || !(ev.type in keyAction[ev.key])) return;
+    keyAction[ev.key][ev.type]();
+};
+['keydown', 'keyup'].forEach((evType) => {
+    window.addEventListener(evType, keyHandler);
+});
 
-// * ===================Keyboard event-handling Callbacks===========
+
+// ! =================== Mouse event-handling Callbacks===========
+
+(function () { //from https://stackoverflow.com/questions/7790725/javascript-track-mouse-position
+    var mousePos;
+    document.onmousemove = handleMouseMove;
+    setInterval(getMousePosition, 100); // setInterval repeats every X ms
+
+    function handleMouseMove(event) {
+        var dot, eventDoc, doc, body, pageX, pageY;
+        event = event || window.event; // IE-ism
+        // If pageX/Y aren't available and clientX/Y are,
+        // calculate pageX/Y - logic taken from jQuery.
+        // (This is to support old IE)
+        if (event.pageX == null && event.clientX != null) {
+            eventDoc = (event.target && event.target.ownerDocument) || document;
+            doc = eventDoc.documentElement;
+            body = eventDoc.body;
+
+            event.pageX = event.clientX +
+                (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
+                (doc && doc.clientLeft || body && body.clientLeft || 0);
+            event.pageY = event.clientY +
+                (doc && doc.scrollTop || body && body.scrollTop || 0) -
+                (doc && doc.clientTop || body && body.clientTop || 0);
+        }
+        mousePos = {
+            x: event.pageX,
+            y: event.pageY
+        };
+    }
+    function getMousePosition() {
+        var pos = mousePos;
+        if (pos && !g_isCameraFixed) {
+            var theta = calculateTheta(canvas.width/2, canvas.height/2, pos.x, pos.y);
+            
+            a = g_LookX - g_EyeX;
+            b = g_LookY - g_EyeY;
+            c = g_LookZ - g_EyeZ;                           
+            l = Math.sqrt(a * a + b * b + c * c);
+            lzx = Math.sqrt(a * a + c * c);
+            // sin_phi = lzx / l;
+
+            //look left
+            if(theta > 180){
+                theta = 360-theta;
+            }
+            theta = 90 - theta;
+            theta = theta*Math.PI/180; //change to rad
+            console.log(Math.sin(theta));
+            g_LookY = b + g_EyeY;
+            g_LookX = l * Math.sin(theta) + g_EyeX;
+            // g_LookZ = l * Math.cos(theta) + g_EyeZ;
+        }
+    }
+})();
+
+function calculateTheta(x1, y1, x2, y2){
+    /* x1, y1 - center, x2, y2 - current position */
+    var cosa = (x1 - x2)/Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
+    var a = Math.acos(cosa); // range from 0 to PI
+    var theta = a*180/Math.PI;
+    if( (x1-x2<0 && y1-y2<0) || (x1-x2>=0 && y1-y2<0)){ //range from 0-360
+        theta = 360 - theta;
+    }
+    return theta
+}
+
 function clearDrag() {
     // Called when user presses 'Clear' button in our webpage
     g_xMdragTot = 0.0;
@@ -498,13 +604,9 @@ function myMouseDown(ev) {
         g_isDrag = true;
         // console.log("dragging",xp,yp )
     }
-    // console.log("not",xp,yp )
     // g_isDrag = true;
     g_xMclik = x;
     g_yMclik = y;
-    // console.log(yp); //(0-50)
-
-
 };
 
 var g_lamp0PosY, g_lamp0PosZ;
@@ -519,12 +621,8 @@ function myMouseMove(ev) {
 
     var x = (xp - canvas.width / 2) / (canvas.width / 2);
     var y = (yp - canvas.height / 2) / (canvas.height / 2);
+    console.log(x, y);
 
-    // g_lamp0.I_pos.elements.set([	 //TODO: somehow unable to change directly
-    //     g_lamp0.I_pos.elements[0],
-    //     g_lamp0.I_pos.elements[1] + 4.0*(x-g_xMclik),	// Horiz drag: change world Y
-    //     g_lamp0.I_pos.elements[2] + 4.0*(y-g_yMclik) 	// Vert. drag: change world Z
-    // ]);
     if (currLampPos) {
         currLampPos[1] = currLampPos[1] + 4.0 * (x - g_xMclik);
         currLampPos[2] = currLampPos[2] + 4.0 * (y - g_yMclik);
@@ -550,7 +648,6 @@ function myMouseUp(ev) {
     var xp = ev.clientX - rect.left;
     var yp = canvas.height - (ev.clientY - rect.top);
 
-
     var x = (xp - canvas.width / 2) / (canvas.width / 2);
     var y = (yp - canvas.height / 2) / (canvas.height / 2);
 
@@ -559,8 +656,6 @@ function myMouseUp(ev) {
     g_yMdragTot += (y - g_yMclik);
     // console.log('myMouseUp  (CVV coords  ):  x, y=\t',x,',\t',y);
     // dragQuat(x - g_xMclik, y - g_yMclik);
-    // console.log("yclick: ", g_yMclik)
-
 };
 
 function dragQuat(xdrag, ydrag) {
