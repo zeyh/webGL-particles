@@ -90,11 +90,19 @@ PartSys.prototype.initShader = function (vertSrc, fragSrc) {
         return;
     }
 
+    this.a_ptSizeID = gl.getAttribLocation(this.shaderLoc, 'a_ptSize');
+    if (this.a_ptSizeID < 0) {
+        console.log('PartSys.init() Failed to get a_ptSize variable location');
+        return;
+    }
+
     this.u_runModeID = gl.getUniformLocation(this.shaderLoc, 'u_runMode');
     if (!this.u_runModeID) {
         console.log('PartSys.init() Failed to get u_runMode variable location');
         return;
     }
+
+
 }
 
 PartSys.prototype.initBouncy3D = function (count) {
@@ -164,8 +172,8 @@ PartSys.prototype.initBouncy3D = function (count) {
         this.s1[j + PART_XVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randX);
         this.s1[j + PART_YVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randY);
         this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randZ);
-        this.s1[j + PART_MASS] = 1.0;
-        this.s1[j + PART_DIAM] = 2.0 + 10 * Math.random(); // on-screen diameter, in pixels
+        this.s1[j + PART_DIAM] = 40 * Math.random(); // on-screen diameter, in pixels
+        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM];
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 30 + 100 * Math.random();
         this.s2.set(this.s1);
@@ -189,6 +197,10 @@ PartSys.prototype.switchToMe = function () {
     gl.vertexAttribPointer(this.a_ColorID, 4, gl.FLOAT, false,   
         PART_MAXVAR*this.FSIZE, PART_R * this.FSIZE); 
     gl.enableVertexAttribArray(this.a_ColorID);
+
+    gl.vertexAttribPointer(this.a_ptSizeID, 1, gl.FLOAT, false,   
+        PART_MAXVAR*this.FSIZE, PART_DIAM * this.FSIZE); 
+    gl.enableVertexAttribArray(this.a_ptSizeID);
 
 }
 

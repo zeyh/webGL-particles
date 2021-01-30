@@ -269,6 +269,29 @@ function sphereDisplay() {
     }
 }
 
+var isTopView = false;
+function changeView(){
+    g_prevDx = 0;
+    g_prevDy = 0;
+    g_dx = 0
+    g_dy = 0;
+
+    if(!isTopView){
+        isTopView = true;
+        document.querySelector('#topView').textContent = 'Front View';
+        g_EyeX = 0.0, g_EyeY = 4.25, g_EyeZ = 4.25;
+        g_LookX = 0.0, g_LookY = 3.3, g_LookZ = 3.5;
+    }
+    else{
+        isTopView = false;
+        document.querySelector('#topView').textContent = 'Top View';
+        g_EyeX = 0.0, g_EyeY = 0.0, g_EyeZ = 4.25;
+        g_LookX = 0.0, g_LookY = 0.0, g_LookZ = 0.0;
+    }
+}
+
+
+
 var isStop = false;
 function stopMotion1() {
     if (isStop) {
@@ -577,14 +600,24 @@ var g_mousePosY_curr;
             if(g_dx != 0 || g_dy != 0){
                 // console.log("increment",0.7 * g_speed * Math.sin(dx+Math.PI), 0.5 * g_speed * Math.sin(dy))
                 // console.log("look at:",g_LookX, g_LookY, g_LookZ);
-                if(g_prevDx && g_prevDy){
+                if(g_prevDx && g_prevDy && g_prevDx != 0 && g_prevDy != 0){
+                    console.log(g_prevDx,g_prevDy )
                     g_dx += g_prevDx;
                     g_dy += g_prevDy;
                 }
-                g_LookX = g_EyeX + 0.7 * g_speed * Math.sin(g_dx+Math.PI); //left/right
-                g_LookZ = g_EyeZ + 0.7 * g_speed * Math.cos(g_dx+Math.PI); //left/right
-                g_LookY = g_EyeY + 0.5 * g_speed * Math.sin(g_dy); //up/down
-
+                if(!isTopView){
+                    // g_EyeX = 0.0, g_EyeY = 0.0, g_EyeZ = 4.25;
+                    // g_LookX = 0.0, g_LookY = 0.0, g_LookZ = 0.0;
+                    g_LookX = g_EyeX + 0.7 * g_speed * Math.sin(g_dx+Math.PI); //left/right
+                    g_LookZ = g_EyeZ + 0.7 * g_speed * Math.cos(g_dx+Math.PI); //left/right
+                    g_LookY = g_EyeY + 0.5 * g_speed * Math.sin(g_dy); //up/down
+                }
+                else{
+                    // g_EyeX = 0.0, g_EyeY = 4.25, g_EyeZ = 4.25;
+                    // g_LookX = 0.0, g_LookY = 3.3, g_LookZ = 3.5;
+                    g_LookX = g_EyeX + 0.7 * g_speed * Math.sin(g_dx+Math.PI); //left/right
+                    g_LookY = g_EyeY + 0.5 * g_speed * Math.sin(g_dy) - 0.95; //up/down
+                }
 
             }
 

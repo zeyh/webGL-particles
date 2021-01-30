@@ -16,9 +16,11 @@ References: besides the inline links in index.html, the code is modified from
     Done: debug buffer overflow for plane, modelMatrix not pushing correctly
     Done: dotFinder(), s1dot, applyForce
     Done: multiple 3D bouncy movement with color with R control
+    Done: fix camera viewpoint/aim point
 
-    ? Doing: fix camera viewpoint/aim point
-    ? Doing: burning flame within a cube [600+]
+    ? Doing[1.5d]: spring mass system
+    ? Doing[0.5d]: midpoint solver
+
     Todo[1.5d]: burning flame within a cube [600+]
     Todo[2d]: 3D Explicit & implicit solvers*9
 
@@ -28,7 +30,7 @@ References: besides the inline links in index.html, the code is modified from
     Todo[2d]: mass-spring like linked systems with interactions (cloth-like)
     Todo[2d]: fluids
     Todo[1d]: textures 
-    Todo[0.7d]: verify camera perspective and make it more intuitive (‘strafe’ perpendicular)
+    Todo[0.2d]: get fixed camera view (‘strafe’ perpendicular)
     Todo[0.3d]: onscreen instructions
 
     FIXME: 
@@ -366,12 +368,13 @@ var diffuseFrag = // * not used but could be used with lightSpec 0
 var particleVert = 
     'precision mediump float;\n' +			// req'd in OpenGL ES if we use 'float'
     'uniform   int  u_runMode; \n' +			// particle system state: 
+    'attribute float a_ptSize; \n' +	//point size
     "attribute vec4 a_Color;\n" +
     'attribute vec4 a_Position;\n' +
     'varying   vec4 v_Color; \n' +
     "uniform   mat4 u_MvpMatrix;\n" +
     'void main() {\n' +
-    '  gl_PointSize = 20.0;\n' +
+    '  gl_PointSize = a_ptSize;\n' +
     '  gl_Position = u_MvpMatrix * a_Position; \n' +	
     '  if(u_runMode == 0) { \n' +
     '	   v_Color = vec4(1.0, 0.0, 0.0, 1.0);	\n' + //color already assigned here		// red: 0==reset
