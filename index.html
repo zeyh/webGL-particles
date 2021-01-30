@@ -16,7 +16,7 @@
         <canvas id="webgl" width="800" height="400">
             Please use a browser that supports "canvas"
         </canvas>
-        <span id ="center">·</span>
+        <!-- span id ="center">·</span -->
         <div class="buttons">
             <button id="showGrid" onclick="gridDisplay()">Show Plane</button>
             <button id="showSphere" onclick="sphereDisplay()">
@@ -24,10 +24,11 @@
             </button>
         </div>
         <div class="general_info">
-            <p class="instructions">Move horizontally 👉 WSAD</p>
-            <p class="instructions">Move vertically 👉 QE</p>
-            <p class="instructions">Change viewing angle 👉 arrow keys</p>
-            <p class="instructions">Zoom in/out 👉 Mouse Scroll</p>
+            <p class="instructions"> <strong>WSAD</strong> to Move</p>
+            <p class="instructions"> Press <strong>QE</strong> to Lift Up/Down</p>
+            <p class="instructions">Press <strong>Shift</strong> to Change Viewing Angles</p>
+            <p class="instructions">Mouse Scroll to Zoom</p>
+            <p class="instructions">Press <strong>R</strong> to Start Animation</p>
         </div>
 
         <script src="lib/webgl-utils.js" type="text/javascript"></script>

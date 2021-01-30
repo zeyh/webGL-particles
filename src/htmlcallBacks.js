@@ -10,7 +10,7 @@ var g_yMclik = 0.0;
 var g_xMdragTot = 0.0;	// total (accumulated) mouse-drag amounts (in CVV coords).
 var g_yMdragTot = 0.0;
 
-var g_EyeX = 0.20, g_EyeY = 0.25, g_EyeZ = 4.25; //eye position default
+var g_EyeX = 0.00, g_EyeY = 0.0, g_EyeZ = 4.25; //eye position default
 var g_LookX = 0.0, g_LookY = 0.0, g_LookZ = 0.0;
 var g_LookUp = 0.0;
 var g_speed = 1;
@@ -19,6 +19,11 @@ var g_schemeOpt = 0;
 //TODO: 👇 encode the object's attribute
 var g_curRunMode = 3;	// particle system state: 0=reset; 1= pause; 2=step; 3=run
 var g_solverScheme = 1;
+
+var g_dx; //record mouse changes
+var g_dy;
+var g_prevDx;
+var g_prevDy;
 
 // control lighting scheme slider bar
 function controlScheme() {
@@ -354,15 +359,14 @@ function key123(ev) {
         }
         else {      // HARD reset: position AND velocity, BOTH state vectors:
             console.log("shift+r being pressed");
-
             for (let index = 0; index < g_particleNum; index++) {
                 g_particleArray[index].runMode = 0;
                 var j = 0;
                 for (var i = 0; i < g_particleArray[index].partCount; i += 1, j += PART_MAXVAR) {
                     g_particleArray[index].roundRand();
-                    g_particleArray[index].s1[j + PART_XPOS] = -0.9;      // lower-left corner of CVV
-                    g_particleArray[index].s1[j + PART_YPOS] = -0.9;      // with a 0.1 margin
-                    g_particleArray[index].s1[j + PART_ZPOS] = 0.0;
+                    g_particleArray[index].s1[j + PART_XPOS] = -0.9 + g_particleArray[index].randX;      // lower-left corner of CVV
+                    g_particleArray[index].s1[j + PART_YPOS] = -0.9 + g_particleArray[index].randY;      // with a 0.1 margin
+                    g_particleArray[index].s1[j + PART_ZPOS] = -0.9 + g_particleArray[index].randZ;
                     g_particleArray[index].s1[j + PART_XVEL] = 3.7 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
                     g_particleArray[index].s1[j + PART_YVEL] = 3.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
                     g_particleArray[index].s1[j + PART_ZVEL] = 3.7 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
@@ -451,19 +455,28 @@ function keyQE(ev) {
     } else { return; }
 }
 
+var theta1 = Math.PI;
 function keyArrowRotateRight(ev) {
     if (ev.keyCode == 39) { // ->
-        g_LookX += 0.09 * g_speed; //unstable rate of rotation
+        theta1 -= 0.05;
+        console.log( Math.sin(theta1), Math.cos(theta1))
+        g_LookX = g_EyeX + 0.7 * g_speed * Math.sin(theta1);
+        g_LookZ = g_EyeZ + 0.7  * g_speed * Math.cos(theta1);
     } else if (ev.keyCode == 37) { // <-
-        g_LookX -= 0.09 * g_speed;
+        theta1 += 0.05;
+        g_LookX = g_EyeX + 0.7  * g_speed * Math.sin(theta1);
+        g_LookZ = g_EyeZ + 0.7  * g_speed * Math.cos(theta1);
     } else { return; }
 }
 
+var theta2 = 0;
 function keyArrowRotateUp(ev) {//change x from -1 to 1
     if (ev.keyCode == 38) { // up ^
-        g_LookY += 0.07 * g_speed;
+        theta2 += 0.05;
+        g_LookY = g_EyeY + 0.5 * g_speed * Math.sin(theta2);
     } else if (ev.keyCode == 40) { // down v
-        g_LookY -= 0.07 * g_speed;
+        theta2 -= 0.05;
+        g_LookY = g_EyeY + 0.5 * g_speed * Math.sin(theta2);
     } else { return; }
 }
 
@@ -485,16 +498,17 @@ var g_isCameraFixed = true;
 const cameraAction = {
     fixCamera() {
         g_isCameraFixed = true;
-        console.log("need camera fixed");
+        g_mousePosX = g_mousePosX_curr;
+        g_mousePosY = g_mousePosY_curr;
     },
     changeCamera() {
         g_isCameraFixed = false;
-        console.log("need alter angles");
     },
 }
 const keyAction = {
     Alt: { keydown: cameraAction.changeCamera, keyup: cameraAction.fixCamera },
     Meta: { keydown: cameraAction.changeCamera, keyup: cameraAction.fixCamera },
+    Shift: { keydown: cameraAction.changeCamera, keyup: cameraAction.fixCamera },
 }
 const keyHandler = (ev) => {
     if (ev.repeat) return;
@@ -507,6 +521,10 @@ const keyHandler = (ev) => {
 
 
 // ! =================== Mouse event-handling Callbacks===========
+var g_mousePosX; //prev
+var g_mousePosY; //prev
+var g_mousePosX_curr;
+var g_mousePosY_curr;
 
 (function () { //from https://stackoverflow.com/questions/7790725/javascript-track-mouse-position
     var mousePos;
@@ -538,39 +556,56 @@ const keyHandler = (ev) => {
     }
     function getMousePosition() {
         var pos = mousePos;
-        if (pos && !g_isCameraFixed) {
-            var theta = calculateTheta(canvas.width/2, canvas.height/2, pos.x, pos.y);
-            
-            a = g_LookX - g_EyeX;
-            b = g_LookY - g_EyeY;
-            c = g_LookZ - g_EyeZ;                           
-            l = Math.sqrt(a * a + b * b + c * c);
-            lzx = Math.sqrt(a * a + c * c);
-            // sin_phi = lzx / l;
-
-            //look left
-            if(theta > 180){
-                theta = 360-theta;
+        if(pos && g_isCameraFixed){
+            g_mousePosX = pos.x;
+            g_mousePosY = pos.y;
+            if(g_dx && g_dy){
+                g_prevDx = g_dx;
+                g_prevDy = g_dy;
             }
-            theta = 90 - theta;
-            theta = theta*Math.PI/180; //change to rad
-            console.log(Math.sin(theta));
-            g_LookY = b + g_EyeY;
-            g_LookX = l * Math.sin(theta) + g_EyeX;
-            // g_LookZ = l * Math.cos(theta) + g_EyeZ;
+        }
+        else if (pos && !g_isCameraFixed) {
+            g_mousePosX_curr = pos.x;
+            g_mousePosY_curr = pos.y;
+            // // to polar coordinate
+            // let mouseTheta = calMouseAngle(canvas.width/2, canvas.height/2, pos.x, pos.y);
+            // let mouseDist = calMouseDist(canvas.width/2, canvas.height/2, pos.x, pos.y);
+            
+            //calculate mouse movement dx and dy
+            g_dx = (g_mousePosX - pos.x)/(canvas.width/2);
+            g_dy = (g_mousePosY - pos.y)/(canvas.height/2);
+            if(g_dx != 0 || g_dy != 0){
+                // console.log("increment",0.7 * g_speed * Math.sin(dx+Math.PI), 0.5 * g_speed * Math.sin(dy))
+                // console.log("look at:",g_LookX, g_LookY, g_LookZ);
+                if(g_prevDx && g_prevDy){
+                    g_dx += g_prevDx;
+                    g_dy += g_prevDy;
+                }
+                g_LookX = g_EyeX + 0.7 * g_speed * Math.sin(g_dx+Math.PI); //left/right
+                g_LookZ = g_EyeZ + 0.7 * g_speed * Math.cos(g_dx+Math.PI); //left/right
+                g_LookY = g_EyeY + 0.5 * g_speed * Math.sin(g_dy); //up/down
+
+
+            }
+
         }
     }
 })();
 
-function calculateTheta(x1, y1, x2, y2){
+
+
+
+function calMouseDist(x1, y1, x2, y2){
+    return Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2));
+}
+function calMouseAngle(x1, y1, x2, y2){
     /* x1, y1 - center, x2, y2 - current position */
     var cosa = (x1 - x2)/Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
     var a = Math.acos(cosa); // range from 0 to PI
-    var theta = a*180/Math.PI;
-    if( (x1-x2<0 && y1-y2<0) || (x1-x2>=0 && y1-y2<0)){ //range from 0-360
-        theta = 360 - theta;
+    if( (x1-x2<0 && y1-y2<0) || (x1-x2>=0 && y1-y2<0)){ //range from 0-2pi
+        a = 2*Math.PI - a;
     }
-    return theta
+    return a;
 }
 
 function clearDrag() {
@@ -621,7 +656,6 @@ function myMouseMove(ev) {
 
     var x = (xp - canvas.width / 2) / (canvas.width / 2);
     var y = (yp - canvas.height / 2) / (canvas.height / 2);
-    console.log(x, y);
 
     if (currLampPos) {
         currLampPos[1] = currLampPos[1] + 4.0 * (x - g_xMclik);

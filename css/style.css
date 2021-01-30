@@ -55,17 +55,27 @@ button:hover {
 .general_info {
     color: white;
     opacity: 0.8;
-    margin-right: 5%;
+    margin-right: 3%;
     font-family: "Comfortaa", cursive;
     float: right;
     position: absolute;
-    bottom: 3%;
+    bottom: 4%;
     right: 1%;
     font-weight: 300;
+    animation: blinker 3.5s;
 }
+/* https://stackoverflow.com/questions/16344354/how-to-make-blinking-flashing-text-with-css-3 */
+@keyframes blinker {
+    0% {opacity: 0.3;}
+    20% {opacity: 1;}
+    40% {opacity: 0.3;}
+    60% {opacity: 1;}
+    80% {opacity: 0.3;}
+    100% {opacity: 0.8;}
+  }
 .general_info p {
     text-align: right;
     font-size: 11pt;
-    margin: 0;
+    margin: 5pt;
 }
 
