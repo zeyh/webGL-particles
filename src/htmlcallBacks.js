@@ -24,6 +24,39 @@ var g_dx; //record mouse changes
 var g_dy;
 var g_prevDx;
 var g_prevDy;
+var solverStr = ["Euler", "MidPoint", "Adams Bash", "Runge Kutta", "Inverse Euler"];
+
+function setSolver(){
+    document.querySelector('#selectedSolver').innerHTML = solverStr[g_currSolverType];
+    for(let i=0; i<solverStr.length; i++){
+        document.getElementById('myDropdown').innerHTML += 
+        '<a class="solverType" onclick="changeSolver('+i+')">'+solverStr[i]+'</a>';
+    }
+}
+function changeSolver(currSolverIdx){
+    g_currSolverType = currSolverIdx;
+    document.querySelector('#selectedSolver').innerHTML = solverStr[g_currSolverType];
+    for (let index = 0; index < g_particleNum; index++) {
+        g_particleArray[index].solvType = g_currSolverType;
+    }
+}
+// drop down menu https://www.w3schools.com/howto/howto_js_dropdown.asp
+function showSolverOptions() {
+    document.getElementById("myDropdown").classList.toggle("show");
+}
+// Close the dropdown if the user clicks outside of it
+window.onclick = function (event) {
+    if (!event.target.matches('.dropbtn')) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        var i;
+        for (i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains('show')) {
+                openDropdown.classList.remove('show');
+            }
+        }
+    }
+}
 
 // control lighting scheme slider bar
 function controlScheme() {
@@ -270,19 +303,19 @@ function sphereDisplay() {
 }
 
 var isTopView = false;
-function changeView(){
+function changeView() {
     g_prevDx = 0;
     g_prevDy = 0;
     g_dx = 0
     g_dy = 0;
 
-    if(!isTopView){
+    if (!isTopView) {
         isTopView = true;
         document.querySelector('#topView').textContent = 'Front View';
         g_EyeX = 0.0, g_EyeY = 4.25, g_EyeZ = 4.25;
         g_LookX = 0.0, g_LookY = 3.3, g_LookZ = 3.5;
     }
-    else{
+    else {
         isTopView = false;
         document.querySelector('#topView').textContent = 'Top View';
         g_EyeX = 0.0, g_EyeY = 0.0, g_EyeZ = 4.25;
@@ -350,32 +383,61 @@ function key123(ev) {
     else if (ev.keyCode == 82) { //R for adding velocity
         if (ev.shiftKey == false) {   // 'r' key: SOFT reset; boost velocity only
             console.log("r being pressed");
+            if(this.g_currSolverType == SOLV_MIDPOINT){
+                for (let index = 0; index < g_particleNum; index++) {
+                    g_particleArray[index].runMode = 3;  // RUN!
+                    var j = 0; // array index for particle i
+                    for (var i = 0; i < g_particleArray[index].partCount; i += 1, j += PART_MAXVAR) {
+                        g_particleArray[index].roundRand();
+                        if (g_particleArray[index].s1[j + PART_XVEL] > 0.0) {
+                            g_particleArray[index].s1[j + PART_XVEL] += 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+                        }
+                        else {
+                            g_particleArray[index].s1[j + PART_XVEL] -= 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+                        }
 
-            for (let index = 0; index < g_particleNum; index++) {
+                        if (g_particleArray[index].s1[j + PART_YVEL] > 0.0) {
+                            g_particleArray[index].s1[j + PART_YVEL] += 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
+                        }
+                        else {
+                            g_particleArray[index].s1[j + PART_YVEL] -= 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
+                        }
 
-                g_particleArray[index].runMode = 3;  // RUN!
-                var j = 0; // array index for particle i
-                for (var i = 0; i < g_particleArray[index].partCount; i += 1, j += PART_MAXVAR) {
-                    g_particleArray[index].roundRand();
-                    if (g_particleArray[index].s2[j + PART_XVEL] > 0.0) {
-                        g_particleArray[index].s2[j + PART_XVEL] += 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+                        if (g_particleArray[index].s1[j + PART_ZVEL] > 0.0) {
+                            g_particleArray[index].s1[j + PART_ZVEL] += 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+                        }
+                        else {
+                            g_particleArray[index].s1[j + PART_ZVEL] -= 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+                        }
                     }
-                    else {
-                        g_particleArray[index].s2[j + PART_XVEL] -= 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
-                    }
+                }
+            }
+            else{
+                for (let index = 0; index < g_particleNum; index++) {
+                    g_particleArray[index].runMode = 3;  // RUN!
+                    var j = 0; // array index for particle i
+                    for (var i = 0; i < g_particleArray[index].partCount; i += 1, j += PART_MAXVAR) {
+                        g_particleArray[index].roundRand();
+                        if (g_particleArray[index].s2[j + PART_XVEL] > 0.0) {
+                            g_particleArray[index].s2[j + PART_XVEL] += 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+                        }
+                        else {
+                            g_particleArray[index].s2[j + PART_XVEL] -= 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+                        }
 
-                    if (g_particleArray[index].s2[j + PART_YVEL] > 0.0) {
-                        g_particleArray[index].s2[j + PART_YVEL] += 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
-                    }
-                    else {
-                        g_particleArray[index].s2[j + PART_YVEL] -= 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
-                    }
+                        if (g_particleArray[index].s2[j + PART_YVEL] > 0.0) {
+                            g_particleArray[index].s2[j + PART_YVEL] += 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
+                        }
+                        else {
+                            g_particleArray[index].s2[j + PART_YVEL] -= 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
+                        }
 
-                    if (g_particleArray[index].s2[j + PART_ZVEL] > 0.0) {
-                        g_particleArray[index].s2[j + PART_ZVEL] += 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
-                    }
-                    else {
-                        g_particleArray[index].s2[j + PART_ZVEL] -= 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+                        if (g_particleArray[index].s2[j + PART_ZVEL] > 0.0) {
+                            g_particleArray[index].s2[j + PART_ZVEL] += 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+                        }
+                        else {
+                            g_particleArray[index].s2[j + PART_ZVEL] -= 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+                        }
                     }
                 }
             }
@@ -414,18 +476,18 @@ function key123(ev) {
     }
 }
 
-function cameraDistance(){
+function cameraDistance() {
     /* calculate the euclidean distance with lookAt and eye*/
     x = g_LookX - g_EyeX;
     y = g_LookY - g_EyeY;
     z = g_LookZ - g_EyeZ;
-    return  Math.sqrt(Math.pow(x,2)+ Math.pow(y,2)+Math.pow(z,2));
+    return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
 }
 
 function keyAD(ev) {
     let dist = cameraDistance();
-    let vec1 = [0,1,0];
-    let vec2 = [(g_LookX-g_EyeX)/dist,(g_LookY-g_EyeY)/dist,(g_LookZ-g_EyeZ)/dist];
+    let vec1 = [0, 1, 0];
+    let vec2 = [(g_LookX - g_EyeX) / dist, (g_LookY - g_EyeY) / dist, (g_LookZ - g_EyeZ) / dist];
     let perpVec = math.cross(vec1, vec2); //perpendicular to forward direction
     if (ev.keyCode == 65) { // a left
         g_EyeX += 0.1 * g_speed * perpVec[0];
@@ -448,21 +510,21 @@ var g_fogDist = new Float32Array([55, 80]);
 function keyWS(ev) {
     let dist = cameraDistance();
     if (ev.keyCode == 87) { // s moving backward 
-        g_EyeX += 0.1 * g_speed * (g_LookX-g_EyeX)/dist;  //sin theta
-        g_EyeY += 0.1 * g_speed * (g_LookY-g_EyeY)/dist;
-        g_EyeZ += 0.1 * g_speed * (g_LookZ-g_EyeZ)/dist;
-        g_LookX += 0.1 * g_speed * (g_LookX-g_EyeX)/dist;
-        g_LookY += 0.1 * g_speed * (g_LookY-g_EyeY)/dist;
-        g_LookZ += 0.1 * g_speed * (g_LookZ-g_EyeZ)/dist;
+        g_EyeX += 0.1 * g_speed * (g_LookX - g_EyeX) / dist;  //sin theta
+        g_EyeY += 0.1 * g_speed * (g_LookY - g_EyeY) / dist;
+        g_EyeZ += 0.1 * g_speed * (g_LookZ - g_EyeZ) / dist;
+        g_LookX += 0.1 * g_speed * (g_LookX - g_EyeX) / dist;
+        g_LookY += 0.1 * g_speed * (g_LookY - g_EyeY) / dist;
+        g_LookZ += 0.1 * g_speed * (g_LookZ - g_EyeZ) / dist;
         if (g_fogDist[1] > g_fogDist[0]) g_fogDist[1] -= 1; // ! change fog visibility
 
     } else if (ev.keyCode == 83) { //  w moving forward
-        g_EyeX -= 0.1 * g_speed * (g_LookX-g_EyeX)/dist; 
-        g_EyeY -= 0.1 * g_speed * (g_LookY-g_EyeY)/dist;
-        g_EyeZ -= 0.1 * g_speed * (g_LookZ-g_EyeZ)/dist;
-        g_LookX -= 0.1 * g_speed * (g_LookX-g_EyeX)/dist;
-        g_LookY -= 0.1 * g_speed * (g_LookY-g_EyeY)/dist;
-        g_LookZ -= 0.1 * g_speed * (g_LookZ-g_EyeZ)/dist;
+        g_EyeX -= 0.1 * g_speed * (g_LookX - g_EyeX) / dist;
+        g_EyeY -= 0.1 * g_speed * (g_LookY - g_EyeY) / dist;
+        g_EyeZ -= 0.1 * g_speed * (g_LookZ - g_EyeZ) / dist;
+        g_LookX -= 0.1 * g_speed * (g_LookX - g_EyeX) / dist;
+        g_LookY -= 0.1 * g_speed * (g_LookY - g_EyeY) / dist;
+        g_LookZ -= 0.1 * g_speed * (g_LookZ - g_EyeZ) / dist;
         g_fogDist[1] += 1; // ! change fog visibility
     } else { return; }
 }
@@ -482,13 +544,13 @@ var theta1 = Math.PI;
 function keyArrowRotateRight(ev) {
     if (ev.keyCode == 39) { // ->
         theta1 -= 0.05;
-        console.log( Math.sin(theta1), Math.cos(theta1))
+        console.log(Math.sin(theta1), Math.cos(theta1))
         g_LookX = g_EyeX + 0.7 * g_speed * Math.sin(theta1);
-        g_LookZ = g_EyeZ + 0.7  * g_speed * Math.cos(theta1);
+        g_LookZ = g_EyeZ + 0.7 * g_speed * Math.cos(theta1);
     } else if (ev.keyCode == 37) { // <-
         theta1 += 0.05;
-        g_LookX = g_EyeX + 0.7  * g_speed * Math.sin(theta1);
-        g_LookZ = g_EyeZ + 0.7  * g_speed * Math.cos(theta1);
+        g_LookX = g_EyeX + 0.7 * g_speed * Math.sin(theta1);
+        g_LookZ = g_EyeZ + 0.7 * g_speed * Math.cos(theta1);
     } else { return; }
 }
 
@@ -579,10 +641,10 @@ var g_mousePosY_curr;
     }
     function getMousePosition() {
         var pos = mousePos;
-        if(pos && g_isCameraFixed){
+        if (pos && g_isCameraFixed) {
             g_mousePosX = pos.x;
             g_mousePosY = pos.y;
-            if(g_dx && g_dy){
+            if (g_dx && g_dy) {
                 g_prevDx = g_dx;
                 g_prevDy = g_dy;
             }
@@ -593,29 +655,29 @@ var g_mousePosY_curr;
             // // to polar coordinate
             // let mouseTheta = calMouseAngle(canvas.width/2, canvas.height/2, pos.x, pos.y);
             // let mouseDist = calMouseDist(canvas.width/2, canvas.height/2, pos.x, pos.y);
-            
+
             //calculate mouse movement dx and dy
-            g_dx = (g_mousePosX - pos.x)/(canvas.width/2);
-            g_dy = (g_mousePosY - pos.y)/(canvas.height/2);
-            if(g_dx != 0 || g_dy != 0){
+            g_dx = (g_mousePosX - pos.x) / (canvas.width / 2);
+            g_dy = (g_mousePosY - pos.y) / (canvas.height / 2);
+            if (g_dx != 0 || g_dy != 0) {
                 // console.log("increment",0.7 * g_speed * Math.sin(dx+Math.PI), 0.5 * g_speed * Math.sin(dy))
                 // console.log("look at:",g_LookX, g_LookY, g_LookZ);
-                if(g_prevDx && g_prevDy && g_prevDx != 0 && g_prevDy != 0){
-                    console.log(g_prevDx,g_prevDy )
+                if (g_prevDx && g_prevDy && g_prevDx != 0 && g_prevDy != 0) {
+                    console.log(g_prevDx, g_prevDy)
                     g_dx += g_prevDx;
                     g_dy += g_prevDy;
                 }
-                if(!isTopView){
+                if (!isTopView) {
                     // g_EyeX = 0.0, g_EyeY = 0.0, g_EyeZ = 4.25;
                     // g_LookX = 0.0, g_LookY = 0.0, g_LookZ = 0.0;
-                    g_LookX = g_EyeX + 0.7 * g_speed * Math.sin(g_dx+Math.PI); //left/right
-                    g_LookZ = g_EyeZ + 0.7 * g_speed * Math.cos(g_dx+Math.PI); //left/right
+                    g_LookX = g_EyeX + 0.7 * g_speed * Math.sin(g_dx + Math.PI); //left/right
+                    g_LookZ = g_EyeZ + 0.7 * g_speed * Math.cos(g_dx + Math.PI); //left/right
                     g_LookY = g_EyeY + 0.5 * g_speed * Math.sin(g_dy); //up/down
                 }
-                else{
+                else {
                     // g_EyeX = 0.0, g_EyeY = 4.25, g_EyeZ = 4.25;
                     // g_LookX = 0.0, g_LookY = 3.3, g_LookZ = 3.5;
-                    g_LookX = g_EyeX + 0.7 * g_speed * Math.sin(g_dx+Math.PI); //left/right
+                    g_LookX = g_EyeX + 0.7 * g_speed * Math.sin(g_dx + Math.PI); //left/right
                     g_LookY = g_EyeY + 0.5 * g_speed * Math.sin(g_dy) - 0.95; //up/down
                 }
 
@@ -628,15 +690,15 @@ var g_mousePosY_curr;
 
 
 
-function calMouseDist(x1, y1, x2, y2){
-    return Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2));
+function calMouseDist(x1, y1, x2, y2) {
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 }
-function calMouseAngle(x1, y1, x2, y2){
+function calMouseAngle(x1, y1, x2, y2) {
     /* x1, y1 - center, x2, y2 - current position */
-    var cosa = (x1 - x2)/Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
+    var cosa = (x1 - x2) / Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
     var a = Math.acos(cosa); // range from 0 to PI
-    if( (x1-x2<0 && y1-y2<0) || (x1-x2>=0 && y1-y2<0)){ //range from 0-2pi
-        a = 2*Math.PI - a;
+    if ((x1 - x2 < 0 && y1 - y2 < 0) || (x1 - x2 >= 0 && y1 - y2 < 0)) { //range from 0-2pi
+        a = 2 * Math.PI - a;
     }
     return a;
 }

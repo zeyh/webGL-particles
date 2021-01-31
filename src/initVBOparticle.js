@@ -34,6 +34,8 @@ const SOLV_MAX = 11;      // number of solver types available.
 const NU_EPSILON = 10E-15;         // a tiny amount; a minimum vector length
 // to use to avoid 'divide-by-zero'
 
+var g_currSolverType = 4;
+
 function PartSys() {
     this.randX = 0;
     this.randY = 0;
@@ -155,7 +157,7 @@ PartSys.prototype.initBouncy3D = function (count) {
     this.resti = 1.0; //inelastic
     this.runMode = 3;
     // this.solvType = 1;
-    this.solvType = SOLV_OLDGOOD;
+    this.solvType = g_currSolverType;
     this.bounceType = 1;
 
     var j = 0;
@@ -329,8 +331,6 @@ PartSys.prototype.dotFinder = function (dest, src) {
         dest[j + PART_YPOS] = src[j + PART_YVEL];
         dest[j + PART_ZPOS] = src[j + PART_ZVEL];
         dest[j + PART_WPOS] = 0.0;                  // presume 'w' fixed at 1.0
-        // Use 'src' current force-accumulator's values (set by PartSys.applyForces())
-        // to find acceleration.  As multiply is FAR faster than divide, do this:
         invMass = 1.0 / src[j + PART_MASS];   // F=ma, so a = F/m, or a = F(1/m);
         dest[j + PART_XVEL] = src[j + PART_X_FTOT] * invMass;
         dest[j + PART_YVEL] = src[j + PART_Y_FTOT] * invMass;
@@ -354,12 +354,55 @@ PartSys.prototype.solver = function () {
     */
     switch (this.solvType) {
         case SOLV_EULER: // EXPLICIT euler s2 = s1 + s1dot*h
-            for (var n = 0; i < this.s1.length; n++) {
-                this.s2[n] = this.s1[n] + this.s1dot[n] * (g_timeStep * 0.001);
+            // for (var n = 0; i < this.s1.length; n++) {
+            //     this.s2[n] += this.s1dot[n] * (g_timeStep * 0.001);
+            // }
+            var j = 0;
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                this.s2[j + PART_XPOS] += this.s1dot[j + PART_XPOS] * (g_timeStep * 0.001);
+                this.s2[j + PART_YPOS] += this.s1dot[j + PART_YPOS] * (g_timeStep * 0.001);
+                this.s2[j + PART_ZPOS] += this.s1dot[j + PART_ZPOS] * (g_timeStep * 0.001);
+                this.s2[j + PART_XVEL] += this.s1dot[j + PART_XVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_YVEL] += this.s1dot[j + PART_YVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_ZVEL] += this.s1dot[j + PART_ZVEL] * (g_timeStep * 0.001);
             }
             break;
-        case SOLV_OLDGOOD: // IMPLICIT or 'reverse time' solver
-            // this.swap(); //now swap in the draw() function
+        case SOLV_MIDPOINT: 
+            /* y_{k+1/2} = y_k + h/2 * f(t_k, y_k) */
+            var j = 0;
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                this.s2[j + PART_XPOS] = this.s1[j + PART_XPOS] + this.s1dot[j + PART_XPOS] * (g_timeStep * 0.001)/2;
+                this.s2[j + PART_YPOS] = this.s1[j + PART_YPOS] + this.s1dot[j + PART_YPOS] * (g_timeStep * 0.001)/2;
+                this.s2[j + PART_ZPOS] = this.s1[j + PART_ZPOS] + this.s1dot[j + PART_ZPOS] * (g_timeStep * 0.001)/2;
+                this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL] + this.s1dot[j + PART_XVEL] * (g_timeStep * 0.001)/2;
+                this.s2[j + PART_YVEL] = this.s1[j + PART_YVEL] + this.s1dot[j + PART_YVEL] * (g_timeStep * 0.001)/2;
+                this.s2[j + PART_ZVEL] = this.s1[j + PART_ZVEL] + this.s1dot[j + PART_ZVEL] * (g_timeStep * 0.001)/2;
+            }
+            /* y_{k+1} = y_k + h * f(t_{k+1/2}, y_{k+1/2}) */
+            var j = 0;
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                this.s1[j + PART_XPOS] += this.s2[j + PART_XPOS] * (g_timeStep * 0.001);
+                this.s1[j + PART_YPOS] += this.s2[j + PART_YPOS] * (g_timeStep * 0.001);
+                this.s1[j + PART_ZPOS] += this.s2[j + PART_ZPOS] * (g_timeStep * 0.001);
+                this.s1[j + PART_XVEL] += this.s2[j + PART_XVEL] * (g_timeStep * 0.001);
+                this.s1[j + PART_YVEL] += this.s2[j + PART_YVEL] * (g_timeStep * 0.001);
+                this.s1[j + PART_ZVEL] += this.s2[j + PART_ZVEL] * (g_timeStep * 0.001);
+            }
+            break;
+        case SOLV_ADAMS_BASH:
+            /*
+            https://www.mathworks.com/matlabcentral/fileexchange/63034-adams-bashforth-moulton-method 
+            for k=5:steps+1
+                x(k,1)=x(k-1)+h;
+                y(k,1)=y(k-1) +(h/24)*(f(x(k-3),y(k-3)) -5*f(x(k-2),y(k-2))
+                                       +19*f(x(k-1),y(k-1)) +9*f(x(k),p(k)));
+            */
+            alert("not yet implemented please close and open again");
+            return -1;
+            break;
+        case SOLV_RUNGEKUTTA:
+            break;
+        case SOLV_OLDGOOD: // IMPLICIT or 'reverse time' solver inverse euler
             var j = 0;
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
                 this.s2[j + PART_YVEL] -= this.grav * (g_timeStep * 0.001);

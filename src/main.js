@@ -116,7 +116,7 @@ function main() {
         keyArrowRotateUp(ev);
         materialKeyPress(ev);
     };
-
+    
     // Set the clear color and enable the depth test
     gl.clearColor(0.15, 0.15, 0.15, 1.0);
     // gl.clearColor(0.0, 0.0, 0.0, 0.0);
@@ -131,6 +131,7 @@ function main() {
     };
 
     initVBOs(g_shadingScheme[0]);    
+    setSolver();
 
     var tick = function () {
         canvas.width = window.innerWidth * 1; //resize canvas
