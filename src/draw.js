@@ -9,6 +9,7 @@ function drawParticle(index, g_modelMatrix, g_viewProjMatrix) {
         g_particleArray[index].dotFinder(g_particleArray[index].s1dot, g_particleArray[index].s1); // find time-derivative s1dot from s1;
         g_particleArray[index].switchToMe();
         g_particleArray[index].render(g_modelMatrix, g_viewProjMatrix);   // transfer current state to VBO, set uniforms, draw it!
+        // console.log(JSON.parse(JSON.stringify(g_particleArray[index].s1)));
         g_particleArray[index].solver();         // find s2 from s1 & related states.
         g_particleArray[index].doConstraints();  // Apply all constraints.  s2 is ready!
         g_particleArray[index].swap();           // Make s2 the new current state
@@ -22,12 +23,12 @@ function drawParticle(index, g_modelMatrix, g_viewProjMatrix) {
 function drawAll([grid, plane, sphere_test, sphere]) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
 
-    // particle
-    pushMatrix(g_modelMatrix);
-    g_modelMatrix.setTranslate(1, 0.4, 1);
-    drawParticle(BOUNCYBALL, g_modelMatrix, g_viewProjMatrix);
-    g_modelMatrix = popMatrix();
-    pushMatrix(g_modelMatrix);
+    // // particle
+    // pushMatrix(g_modelMatrix);
+    // g_modelMatrix.setTranslate(1, 0.4, 1);
+    // drawParticle(BOUNCYBALL, g_modelMatrix, g_viewProjMatrix);
+    // g_modelMatrix = popMatrix();
+    // pushMatrix(g_modelMatrix);
 
     // particle2
     pushMatrix(g_modelMatrix);

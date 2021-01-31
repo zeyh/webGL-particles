@@ -160,9 +160,10 @@ PartSys.prototype.initBouncy3D = function (count) {
     this.solvType = g_currSolverType;
     this.bounceType = 1;
 
+    //* initial conditions
     var j = 0;
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-        this.roundRand();
+        this.roundRand(); // * y(0)
         this.s1[j + PART_XPOS] = -0.8 + 0.1 * this.randX;
         this.s1[j + PART_YPOS] = -0.8 + 0.1 * this.randY;
         this.s1[j + PART_ZPOS] = -0.8 + 0.1 * this.randZ;
@@ -170,11 +171,11 @@ PartSys.prototype.initBouncy3D = function (count) {
         this.s1[j + PART_R] = Math.abs(this.randX);
         this.s1[j + PART_G] = Math.abs(this.randY);
         this.s1[j + PART_B] = 0.9;
-        this.roundRand();
+        this.roundRand(); // * y'(0)
         this.s1[j + PART_XVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randX);
         this.s1[j + PART_YVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randY);
         this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randZ);
-        this.s1[j + PART_DIAM] = 40 * Math.random(); // on-screen diameter, in pixels
+        this.s1[j + PART_DIAM] = 20; //+ 40 * Math.random(); // on-screen diameter, in pixels
         this.s1[j + PART_MASS] = this.s1[j + PART_DIAM];
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 30 + 100 * Math.random();
@@ -191,17 +192,17 @@ PartSys.prototype.switchToMe = function () {
     // ! bindBuffer vertexAttribPointer enableVertexAttribArray
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vboID); // ! 👈 finally debugged......
-    
+
     gl.vertexAttribPointer(this.a_PositionID, 4, gl.FLOAT, false,
         PART_MAXVAR * this.FSIZE, PART_XPOS * this.FSIZE);
     gl.enableVertexAttribArray(this.a_PositionID);
 
-    gl.vertexAttribPointer(this.a_ColorID, 4, gl.FLOAT, false,   
-        PART_MAXVAR*this.FSIZE, PART_R * this.FSIZE); 
+    gl.vertexAttribPointer(this.a_ColorID, 4, gl.FLOAT, false,
+        PART_MAXVAR * this.FSIZE, PART_R * this.FSIZE);
     gl.enableVertexAttribArray(this.a_ColorID);
 
-    gl.vertexAttribPointer(this.a_ptSizeID, 1, gl.FLOAT, false,   
-        PART_MAXVAR*this.FSIZE, PART_DIAM * this.FSIZE); 
+    gl.vertexAttribPointer(this.a_ptSizeID, 1, gl.FLOAT, false,
+        PART_MAXVAR * this.FSIZE, PART_DIAM * this.FSIZE);
     gl.enableVertexAttribArray(this.a_ptSizeID);
 
 }
@@ -242,87 +243,96 @@ PartSys.prototype.render = function (g_modelMatrix, g_viewProjMatrix) { //finall
 }
 
 PartSys.prototype.applyForces = function (s, fList) {
-    /*
-    a function that accepts a state variable and an array of force-applying objects (e.g. a Forcer prototype or class; then make an array of these objects), and applies them to the given state variable
-    */
-
     var j = 0;  // i==particle number; j==array index for i-th particle
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
         s[j + PART_X_FTOT] = 0.0;
         s[j + PART_Y_FTOT] = 0.0;
         s[j + PART_Z_FTOT] = 0.0;
     }
-    for (var k = 0; k < fList.length; k++) {  // iterate through every cForce
-        if (fList[k].forceType <= 0) { // ignore F_NONE or temporarily disabled CForcer
-            continue;
+    for (var k = 0; k < fList.length; k++) {  // for every CForcer in fList array,
+        //    console.log("fList[k].forceType:", fList[k].forceType);
+        if (fList[k].forceType <= 0) {     //.................Invalid force? SKIP IT!
+            // if forceType is F_NONE, or if forceType was 
+            continue;         // negated to (temporarily) disable the CForcer,
         }
-        if (fList[k].partCount != 0) {
-            var m = fList[k].partFirst;     // particle # for 1st one affected;
-            var mmax = this.partCount;      // total number of particles in state s
-            if (fList[k].partCount > 0) {    // did forcer specify HOW MANY particles?
-                // (recall: if <0, forcer affects all particles from partFirst onwards)
-                // YES.  limit this CForcer to only that many particles.
-                mmax = m + fList[k].partCount - 1;
-            }           // m and mmax are now correctly initialized; use them!   
-            switch (fList[k].forceType) {    // what force should we apply to these particles
-                case F_MOUSE:     // Spring-like connection to mouse cursor
-                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
-                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
-                    break;
-                case F_GRAV_E:    // Earth-gravity pulls 'downwards' as defined by downDir
-                    var j = m * PART_MAXVAR;  // state var array index for particle # m
-                    for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
-                        // force from gravity == mass * gravConst * downDirection
-                        s[j + PART_X_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
-                            fList[k].downDir.elements[0];
-                        s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
-                            fList[k].downDir.elements[1];
-                        s[j + PART_Z_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
-                            fList[k].downDir.elements[2];
-                    }
-                    break;
-                case F_GRAV_P:    // planetary gravity
-                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
-                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
-                    break;
-                case F_DRAG:      // viscous drag: force = -K_drag * velocity.
-                    var j = m * PART_MAXVAR;  // state var array index for particle # m
-                    for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
-                        // force from gravity == mass * gravConst * downDirection
-                        s[j + PART_X_FTOT] -= fList[k].K_drag * s[j + PART_XVEL];
-                        s[j + PART_Y_FTOT] -= fList[k].K_drag * s[j + PART_YVEL];
-                        s[j + PART_Z_FTOT] -= fList[k].K_drag * s[j + PART_ZVEL];
-                    }
-                    break;
-                case F_WIND:      // Blowing-wind-like force-field; fcn of 3D position
-                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
-                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
-                    break;
-                case F_BUBBLE:    // Constant inward force (bub_force)to a 3D centerpoint 
-                    // bub_ctr if particle is > bub_radius away from it.
-                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
-                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
-                    break;
-                case F_SPRING:
-                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
-                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
-                    break;
-                case F_SPRINGSET:
-                    console.log("PartSys.applyForces(), fList[", k, "].forceType:",
-                        fList[k].forceType, "NOT YET IMPLEMENTED!!");
-                    break;
-                case F_CHARGE:
-                default:
-                    console.log("!!!ApplyForces() fList[", k, "] invalid forceType:", fList[k].forceType);
-                    break;
-            } // switch(fList[k].forceType)
-        } // if partCount !=0)...
+
+        var m = fList[k].targFirst;   // first affected particle # in our state 's'
+        var mmax = this.partCount;    // Total number of particles in 's'
+        // (last particle number we access is mmax-1)
+        if (fList[k].targCount == 0) {    // ! Apply force to e1,e2 particles only!
+            m = mmax = 0;   // don't let loop run; apply force to e1,e2 particles only.
+        }
+        else if (fList[k].targCount > 0) {
+            // YES! force applies to 'targCount' particles starting with particle # m:
+            var tmp = fList[k].targCount;
+            if (tmp < mmax) mmax = tmp;    // (but MAKE SURE mmax doesn't get larger)
+            else console.log("\n\n!!PartSys.applyForces() index error!!\n\n");
+        }
+        // console.log("m:",m,"mmax:",mmax);
+        // m and mmax are now correctly initialized; use them!  
+        switch (fList[k].forceType) {
+            case F_MOUSE:     // Spring-like connection to mouse cursor
+                console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                    fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                break;
+            case F_GRAV_E:    // Earth-gravity pulls 'downwards' as defined by downDir
+                var j = m * PART_MAXVAR;  // state var array index for particle # m
+                for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
+                    // force from gravity == mass * gravConst * downDirection
+                    s[j + PART_X_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                        fList[k].downDir.elements[0];
+                    s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                        fList[k].downDir.elements[1];
+                    s[j + PART_Z_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                        fList[k].downDir.elements[2];
+                }
+                break;
+            case F_GRAV_P:    // planetary gravity between particle # e1 and e2.
+                console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                    fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                break;
+            case F_WIND:      // Blowing-wind-like force-field; fcn of 3D position
+                console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                    fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                break;
+            case F_BUBBLE:    // Constant inward force (bub_force)to a 3D centerpoint 
+                // bub_ctr if particle is > bub_radius away from it.
+                console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                    fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                break;
+            case F_DRAG:      // viscous drag: force = -K_drag * velocity.
+                var j = m * PART_MAXVAR;  // state var array index for particle # m
+                for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
+                    // force from gravity == mass * gravConst * downDirection
+                    s[j + PART_X_FTOT] -= (fList[k].K_drag + 10) * s[j + PART_XVEL];
+                    s[j + PART_Y_FTOT] -= (fList[k].K_drag+ 10) * s[j + PART_YVEL];
+                    s[j + PART_Z_FTOT] -= (fList[k].K_drag+ 10) * s[j + PART_ZVEL];
+                }
+                break;
+            case F_SPRING:
+                console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                    fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                break;
+            case F_SPRINGSET:
+                console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                    fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                break;
+            case F_CHARGE:
+                console.log("PartSys.applyForces(), fList[", k, "].forceType:",
+                    fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                break;
+            default:
+                console.log("!!!ApplyForces() fList[", k, "] invalid forceType:", fList[k].forceType);
+                break;
+        } // switch(fList[k].forceType)
     } // for(k=0...)
 }
 
 PartSys.prototype.dotFinder = function (dest, src) {
     /* 
     numerical differentiation for time derivative
+    src -> given y'(0) (& y''(0) from applyForce())
+    dest -> compute y(1) & y'(1)
     */
     var invMass;  // inverse mass
     var j = 0;  // i==particle number; j==array index for i-th particle
@@ -331,6 +341,8 @@ PartSys.prototype.dotFinder = function (dest, src) {
         dest[j + PART_YPOS] = src[j + PART_YVEL];
         dest[j + PART_ZPOS] = src[j + PART_ZVEL];
         dest[j + PART_WPOS] = 0.0;                  // presume 'w' fixed at 1.0
+        // Use 'src' current force-accumulator's values (set by PartSys.applyForces())
+        // to find acceleration.  As multiply is FAR faster than divide, do this:
         invMass = 1.0 / src[j + PART_MASS];   // F=ma, so a = F/m, or a = F(1/m);
         dest[j + PART_XVEL] = src[j + PART_X_FTOT] * invMass;
         dest[j + PART_YVEL] = src[j + PART_Y_FTOT] * invMass;
@@ -338,11 +350,11 @@ PartSys.prototype.dotFinder = function (dest, src) {
         dest[j + PART_X_FTOT] = 0.0;  // we don't know how force changes with time;
         dest[j + PART_Y_FTOT] = 0.0;  // presume it stays constant during timestep.
         dest[j + PART_Z_FTOT] = 0.0;
-        dest[j + PART_R] = 0.0;       // color doesn't change with time.
+        dest[j + PART_R] = 0.0;       // presume color doesn't change with time.
         dest[j + PART_G] = 0.0;
         dest[j + PART_B] = 0.0;
-        dest[j + PART_MASS] = 0.0;    // we don't know how these change with time;
-        dest[j + PART_DIAM] = 0.0;    // presume they stay constant during timestep.   
+        dest[j + PART_MASS] = 0.0;    // presume mass doesn't change with time.
+        dest[j + PART_DIAM] = 0.0;    // presume these don't change either...   
         dest[j + PART_RENDMODE] = 0.0;
         dest[j + PART_AGE] = 0.0;
     }
@@ -354,39 +366,32 @@ PartSys.prototype.solver = function () {
     */
     switch (this.solvType) {
         case SOLV_EULER: // EXPLICIT euler s2 = s1 + s1dot*h
-            // for (var n = 0; i < this.s1.length; n++) {
-            //     this.s2[n] += this.s1dot[n] * (g_timeStep * 0.001);
-            // }
-            var j = 0;
-            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                this.s2[j + PART_XPOS] += this.s1dot[j + PART_XPOS] * (g_timeStep * 0.001);
-                this.s2[j + PART_YPOS] += this.s1dot[j + PART_YPOS] * (g_timeStep * 0.001);
-                this.s2[j + PART_ZPOS] += this.s1dot[j + PART_ZPOS] * (g_timeStep * 0.001);
-                this.s2[j + PART_XVEL] += this.s1dot[j + PART_XVEL] * (g_timeStep * 0.001);
-                this.s2[j + PART_YVEL] += this.s1dot[j + PART_YVEL] * (g_timeStep * 0.001);
-                this.s2[j + PART_ZVEL] += this.s1dot[j + PART_ZVEL] * (g_timeStep * 0.001);
+            for (var n = 0; n < this.s1.length; n++) { // for all elements in s1,s2,s1dot;
+                this.s2[n] = this.s1[n] + this.s1dot[n] * (g_timeStep * 0.001);
             }
             break;
-        case SOLV_MIDPOINT: 
-            /* y_{k+1/2} = y_k + h/2 * f(t_k, y_k) */
+        case SOLV_MIDPOINT:
+            let s_half = this.s2;
             var j = 0;
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                this.s2[j + PART_XPOS] = this.s1[j + PART_XPOS] + this.s1dot[j + PART_XPOS] * (g_timeStep * 0.001)/2;
-                this.s2[j + PART_YPOS] = this.s1[j + PART_YPOS] + this.s1dot[j + PART_YPOS] * (g_timeStep * 0.001)/2;
-                this.s2[j + PART_ZPOS] = this.s1[j + PART_ZPOS] + this.s1dot[j + PART_ZPOS] * (g_timeStep * 0.001)/2;
-                this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL] + this.s1dot[j + PART_XVEL] * (g_timeStep * 0.001)/2;
-                this.s2[j + PART_YVEL] = this.s1[j + PART_YVEL] + this.s1dot[j + PART_YVEL] * (g_timeStep * 0.001)/2;
-                this.s2[j + PART_ZVEL] = this.s1[j + PART_ZVEL] + this.s1dot[j + PART_ZVEL] * (g_timeStep * 0.001)/2;
+                s_half[j + PART_XPOS] += this.s1dot[j + PART_XPOS] * (g_timeStep * 0.001) / 2;
+                s_half[j + PART_YPOS] += this.s1dot[j + PART_YPOS] * (g_timeStep * 0.001) / 2;
+                s_half[j + PART_ZPOS] += this.s1dot[j + PART_ZPOS] * (g_timeStep * 0.001) / 2;
+                s_half[j + PART_XVEL] += this.s1dot[j + PART_XVEL] * (g_timeStep * 0.001) / 2;
+                s_half[j + PART_YVEL] += this.s1dot[j + PART_YVEL] * (g_timeStep * 0.001) / 2;
+                s_half[j + PART_ZVEL] += this.s1dot[j + PART_ZVEL] * (g_timeStep * 0.001) / 2;
             }
-            /* y_{k+1} = y_k + h * f(t_{k+1/2}, y_{k+1/2}) */
+            this.applyForces(s_half, this.forceList);  // find current net force on each particle
+            let s_halfDot = new Float32Array(this.partCount * PART_MAXVAR);
+            this.dotFinder(s_halfDot, s_half);
             var j = 0;
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                this.s1[j + PART_XPOS] += this.s2[j + PART_XPOS] * (g_timeStep * 0.001);
-                this.s1[j + PART_YPOS] += this.s2[j + PART_YPOS] * (g_timeStep * 0.001);
-                this.s1[j + PART_ZPOS] += this.s2[j + PART_ZPOS] * (g_timeStep * 0.001);
-                this.s1[j + PART_XVEL] += this.s2[j + PART_XVEL] * (g_timeStep * 0.001);
-                this.s1[j + PART_YVEL] += this.s2[j + PART_YVEL] * (g_timeStep * 0.001);
-                this.s1[j + PART_ZVEL] += this.s2[j + PART_ZVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_XPOS] += s_halfDot[j + PART_XPOS] * (g_timeStep * 0.001);
+                this.s2[j + PART_YPOS] += s_halfDot[j + PART_YPOS] * (g_timeStep * 0.001);
+                this.s2[j + PART_ZPOS] += s_halfDot[j + PART_ZPOS] * (g_timeStep * 0.001);
+                this.s2[j + PART_XVEL] += s_halfDot[j + PART_XVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_YVEL] += s_halfDot[j + PART_YVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_ZVEL] += s_halfDot[j + PART_ZVEL] * (g_timeStep * 0.001);
             }
             break;
         case SOLV_ADAMS_BASH:
@@ -409,7 +414,6 @@ PartSys.prototype.solver = function () {
                 this.s2[j + PART_XVEL] *= this.drag;
                 this.s2[j + PART_YVEL] *= this.drag;
                 this.s2[j + PART_ZVEL] *= this.drag;
-                // convert g_timeStep from milliseconds to seconds!
                 this.s2[j + PART_XPOS] += this.s2[j + PART_XVEL] * (g_timeStep * 0.001);
                 this.s2[j + PART_YPOS] += this.s2[j + PART_YVEL] * (g_timeStep * 0.001);
                 this.s2[j + PART_ZPOS] += this.s2[j + PART_ZVEL] * (g_timeStep * 0.001);
@@ -589,6 +593,7 @@ PartSys.prototype.swap = function () {
     /*
     exchanges the contents of s1 and s2 by swapping their references
     */
+
     this.s1.set(this.s2);
 }
 

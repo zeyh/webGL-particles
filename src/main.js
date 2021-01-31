@@ -18,8 +18,8 @@ References: besides the inline links in index.html, the code is modified from
     Done: multiple 3D bouncy movement with color with R control
     Done: fix camera viewpoint/aim point
 
+    ? Doing[0.3d] solvers*2
     ? Doing[1.5d]: spring mass system
-    ? Doing[0.5d]: midpoint solver
 
     Todo[1.5d]: burning flame within a cube [600+]
     Todo[2d]: 3D Explicit & implicit solvers*9
@@ -33,8 +33,10 @@ References: besides the inline links in index.html, the code is modified from
     Todo[0.2d]: get fixed camera view (‘strafe’ perpendicular)
     Todo[0.3d]: onscreen instructions
 
+    Note: 
+        console.log(JSON.parse(JSON.stringify(g_particleArray[index].s1)));
+
     FIXME: 
-        after pressed f key to change solver, pressing R will not continue running
 
     ! need testing/clearify: 
         run together at ‘interactive’ rates (~3 frames/second (FPS))?
@@ -87,7 +89,7 @@ function initVBOs(currScheme){
 
     globalThis.TEST = 1;
     var particle2 = new PartSys();
-    particle2.initBouncy3D(20);
+    particle2.initBouncy3D(10);
     particle2.initShader(particleVert, particleFrag);
     g_particleArray[TEST] = particle2;
 
