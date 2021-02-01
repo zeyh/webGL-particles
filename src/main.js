@@ -81,17 +81,24 @@ function initVBOs(currScheme){
     var sphere_test = new VBO_genetic(currScheme[0], currScheme[1], sphere_vertices, sphere_colors, sphere_normals, sphere_indices, currScheme[2]);
     sphere_test.init();
 
-    globalThis.BOUNCYBALL = 0;
+    globalThis.TEST = 0;
     var particle1 = new PartSys();
-    particle1.initBouncy3D(600);
+    particle1.initBouncy3D(10);
     particle1.initShader(particleVert, particleFrag);
-    g_particleArray[BOUNCYBALL] = particle1;
+    g_particleArray[TEST] = particle1;
 
-    globalThis.TEST = 1;
+
+    globalThis.BOUNCYBALL = 1;
     var particle2 = new PartSys();
-    particle2.initBouncy3D(1);
+    particle2.initBouncy3D(600);
     particle2.initShader(particleVert, particleFrag);
-    g_particleArray[TEST] = particle2;
+    g_particleArray[BOUNCYBALL] = particle2;
+
+    globalThis.SPRINGMASS = 2;
+    var particle3 = new PartSys();
+    particle3.initSpring(2); //need at least a pair
+    particle3.initShader(particleVert, particleFrag);
+    g_particleArray[SPRINGMASS] = particle3;
 
     g_vboArray = [grid, plane, sphere_test, sphere];
 }

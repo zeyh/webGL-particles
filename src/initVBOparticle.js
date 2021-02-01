@@ -107,6 +107,85 @@ PartSys.prototype.initShader = function (vertSrc, fragSrc) {
 
 }
 
+PartSys.prototype.initSpring = function (count) {
+    // ! force-causing objects
+    var fTmp = new CForcer();       // create a force-causing object, and
+    // * earth gravity for all particles:
+    fTmp.forceType = F_GRAV_E;      // set it to earth gravity, and
+    fTmp.targFirst = 0;             // set it to affect ALL particles:
+    fTmp.partCount = -1;            // (negative value means ALL particles and IGNORE all other Cforcer members...)
+    this.forceList.push(fTmp);      // append this 'gravity' force object to 
+    // the forceList array of force-causing objects.
+    // * drag for all particles:
+    fTmp = new CForcer();           // create a NEW CForcer object 
+    fTmp.forceType = F_DRAG;        // Viscous Drag
+    fTmp.Kdrag = 0.15;              // in Euler solver, scales velocity by 0.85
+    fTmp.targFirst = 0;             // apply it to ALL particles:
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+    console.log("\t\t", this.forceList.length, "CForcer objects:");
+
+    // ! ode constants
+    this.partCount = count;
+    this.s1 = new Float32Array(this.partCount * PART_MAXVAR);
+    this.s2 = new Float32Array(this.partCount * PART_MAXVAR);
+    this.s1dot = new Float32Array(this.partCount * PART_MAXVAR);
+
+    this.INIT_VEL = 0.15 * 60.0;
+    this.drag = 0.985; //friction force
+    this.grav = 9.832; //gravity constant
+    this.resti = 1.0; //inelastic
+    this.runMode = 3;
+    // this.solvType = 1;
+    this.solvType = g_currSolverType;
+    this.bounceType = 1;
+
+    //* initial conditions
+    var j = 0;
+    for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+        this.roundRand(); // * y(0)
+        this.s1[j + PART_XPOS] = -0.8 + 0.1 * this.randX;
+        this.s1[j + PART_YPOS] = -0.8 + 0.1 * this.randY;
+        this.s1[j + PART_ZPOS] = -0.8 + 0.1 * this.randZ;
+        this.s1[j + PART_WPOS] = 1.0;
+        this.s1[j + PART_R] = Math.abs(this.randX);
+        this.s1[j + PART_G] = Math.abs(this.randY);
+        this.s1[j + PART_B] = 0.9;
+        this.roundRand(); // * y'(0)
+        this.s1[j + PART_XVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randX);
+        this.s1[j + PART_YVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randY);
+        this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randZ);
+        this.s1[j + PART_DIAM] = 100; 
+        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM];
+        this.s1[j + PART_RENDMODE] = 0.0;
+        this.s1[j + PART_AGE] = 30 + 100 * Math.random();
+        this.s2.set(this.s1);
+    }
+    this.FSIZE = this.s1.BYTES_PER_ELEMENT;
+}
+
+PartSys.prototype.switchToMe = function () {
+    gl.useProgram(this.shaderLoc);
+    gl.uniform1i(this.runModeID, this.runMode); //bound keyboard callbacks
+
+    // ! bindBuffer vertexAttribPointer enableVertexAttribArray
+    this.FSIZE = this.s1.BYTES_PER_ELEMENT;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vboID); // ! 👈 finally debugged......
+
+    gl.vertexAttribPointer(this.a_PositionID, 4, gl.FLOAT, false,
+        PART_MAXVAR * this.FSIZE, PART_XPOS * this.FSIZE);
+    gl.enableVertexAttribArray(this.a_PositionID);
+
+    gl.vertexAttribPointer(this.a_ColorID, 4, gl.FLOAT, false,
+        PART_MAXVAR * this.FSIZE, PART_R * this.FSIZE);
+    gl.enableVertexAttribArray(this.a_ColorID);
+
+    gl.vertexAttribPointer(this.a_ptSizeID, 1, gl.FLOAT, false,
+        PART_MAXVAR * this.FSIZE, PART_DIAM * this.FSIZE);
+    gl.enableVertexAttribArray(this.a_ptSizeID);
+
+}
+
 PartSys.prototype.initBouncy3D = function (count) {
     /*
     argument selects among several different kinds of particle systems 
@@ -175,7 +254,7 @@ PartSys.prototype.initBouncy3D = function (count) {
         this.s1[j + PART_XVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randX);
         this.s1[j + PART_YVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randY);
         this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randZ);
-        this.s1[j + PART_DIAM] = 20; //+ 40 * Math.random(); // on-screen diameter, in pixels
+        this.s1[j + PART_DIAM] = 40 * Math.random(); // on-screen diameter, in pixels
         this.s1[j + PART_MASS] = this.s1[j + PART_DIAM];
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 30 + 100 * Math.random();
@@ -520,10 +599,8 @@ PartSys.prototype.solver = function () {
                 this.applyForces(s_mid_backE, this.forceList);
                 let s_mid_backEDot = new Float32Array(this.partCount * PART_MAXVAR);
                 this.dotFinder(s_mid_backEDot, s_mid_backE);
-                this.s2[j + PART_XPOS] = this.s1[j + PART_XPOS] +
+                // this.s2[j + PART_XPOS] = this.s1[j + PART_XPOS] +
             }
-
-
         case SOLV_VERLET:
             /* https://en.wikipedia.org/wiki/Verlet_integration 
             x_{n+1} = 2*x_n - x_{n-1} + 1/2at^2
@@ -553,9 +630,9 @@ PartSys.prototype.solver = function () {
                     + s_midDot_verlet[j + PART_YVEL] * Math.pow(g_timeStep * 0.001, 2);
                 this.s2[j + PART_ZPOS] = 2 * s_mid_verlet[j + PART_ZPOS] - this.s1[j + PART_ZPOS]
                     + s_midDot_verlet[j + PART_ZVEL] * Math.pow(g_timeStep * 0.001, 2);
-                this.s2[j + PART_XVEL] += this.s_midDot_verlet[j + PART_XVEL] * (g_timeStep * 0.001);
-                this.s2[j + PART_YVEL] += this.s_midDot_verlet[j + PART_YVEL] * (g_timeStep * 0.001);
-                this.s2[j + PART_ZVEL] += this.s_midDot_verlet[j + PART_ZVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_XVEL] += s_midDot_verlet[j + PART_XVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_YVEL] += s_midDot_verlet[j + PART_YVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_ZVEL] += s_midDot_verlet[j + PART_ZVEL] * (g_timeStep * 0.001);
             }
             break;
         default:
