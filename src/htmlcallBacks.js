@@ -24,7 +24,7 @@ var g_dx; //record mouse changes
 var g_dy;
 var g_prevDx;
 var g_prevDy;
-var solverStr = ["Euler", "MidPoint", "2-Step Adams Bash", "Runge Kutta", "Backward Euler", "Backward MidPoint", "Backward Adams Bash", "Verlet", "Velocity Verlet", "Leapfrog"];
+var solverStr = ["Euler", "MidPoint", "2-Step Adams Bash", "Runge Kutta (time??)", "Default Solver", "Backward Euler(na)", "Backward MidPoint(na)", "Backward Adams Bash(na)", "Verlet(buggy...)", "Velocity Verlet(na)", "Leapfrog(na)"];
 
 function setSolver(){
     document.querySelector('#selectedSolver').innerHTML = solverStr[g_currSolverType];
