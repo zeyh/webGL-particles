@@ -23,12 +23,12 @@ function drawParticle(index, g_modelMatrix, g_viewProjMatrix) {
 function drawAll([grid, plane, sphere_test, sphere]) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
 
-    // // particle
-    // pushMatrix(g_modelMatrix);
-    // g_modelMatrix.setTranslate(1, 0.4, 1);
-    // drawParticle(BOUNCYBALL, g_modelMatrix, g_viewProjMatrix);
-    // g_modelMatrix = popMatrix();
-    // pushMatrix(g_modelMatrix);
+    // particle
+    pushMatrix(g_modelMatrix);
+    g_modelMatrix.setTranslate(1, 0.4, 1);
+    drawParticle(BOUNCYBALL, g_modelMatrix, g_viewProjMatrix);
+    g_modelMatrix = popMatrix();
+    pushMatrix(g_modelMatrix);
 
     // particle2
     pushMatrix(g_modelMatrix);

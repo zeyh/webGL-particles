@@ -89,7 +89,7 @@ function initVBOs(currScheme){
 
     globalThis.TEST = 1;
     var particle2 = new PartSys();
-    particle2.initBouncy3D(10);
+    particle2.initBouncy3D(1);
     particle2.initShader(particleVert, particleFrag);
     g_particleArray[TEST] = particle2;
 

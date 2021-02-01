@@ -305,8 +305,8 @@ PartSys.prototype.applyForces = function (s, fList) {
                 for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
                     // force from gravity == mass * gravConst * downDirection
                     s[j + PART_X_FTOT] -= (fList[k].K_drag + 10) * s[j + PART_XVEL];
-                    s[j + PART_Y_FTOT] -= (fList[k].K_drag+ 10) * s[j + PART_YVEL];
-                    s[j + PART_Z_FTOT] -= (fList[k].K_drag+ 10) * s[j + PART_ZVEL];
+                    s[j + PART_Y_FTOT] -= (fList[k].K_drag + 10) * s[j + PART_YVEL];
+                    s[j + PART_Z_FTOT] -= (fList[k].K_drag + 10) * s[j + PART_ZVEL];
                 }
                 break;
             case F_SPRING:
@@ -366,12 +366,14 @@ PartSys.prototype.solver = function () {
     */
     switch (this.solvType) {
         case SOLV_EULER: // EXPLICIT euler s2 = s1 + s1dot*h
+            //y(j,1)=y(j-1,1)+h*f(x(j-1,1),y(j-1,1));
             for (var n = 0; n < this.s1.length; n++) { // for all elements in s1,s2,s1dot;
                 this.s2[n] = this.s1[n] + this.s1dot[n] * (g_timeStep * 0.001);
             }
             break;
         case SOLV_MIDPOINT:
-            let s_half = this.s2;
+            /* y_{k+1/2} = y_k + h/2 * f(t_k, y_k) */
+            let s_half = this.s1;
             var j = 0;
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
                 s_half[j + PART_XPOS] += this.s1dot[j + PART_XPOS] * (g_timeStep * 0.001) / 2;
@@ -384,6 +386,7 @@ PartSys.prototype.solver = function () {
             this.applyForces(s_half, this.forceList);  // find current net force on each particle
             let s_halfDot = new Float32Array(this.partCount * PART_MAXVAR);
             this.dotFinder(s_halfDot, s_half);
+            /* y_{k+1} = y_k + h * f(t_{k+1/2}, y_{k+1/2}) */
             var j = 0;
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
                 this.s2[j + PART_XPOS] += s_halfDot[j + PART_XPOS] * (g_timeStep * 0.001);
@@ -396,16 +399,108 @@ PartSys.prototype.solver = function () {
             break;
         case SOLV_ADAMS_BASH:
             /*
-            https://www.mathworks.com/matlabcentral/fileexchange/63034-adams-bashforth-moulton-method 
-            for k=5:steps+1
-                x(k,1)=x(k-1)+h;
-                y(k,1)=y(k-1) +(h/24)*(f(x(k-3),y(k-3)) -5*f(x(k-2),y(k-2))
-                                       +19*f(x(k-1),y(k-1)) +9*f(x(k),p(k)));
+            https://en.wikipedia.org/wiki/Linear_multistep_method
+            y_{n+2} = y_{n+1} + 3/2*h*f(t_{n+1},y_{n+1}) - 1/2 * h * f(t_n, y_n)
+            s1(n), s_mid(n+1) [computed by Euler], s2(n+2)
             */
-            alert("not yet implemented please close and open again");
-            return -1;
+            let s_mid = this.s1;
+            var j = 0;
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                s_mid[j + PART_XPOS] += this.s1dot[j + PART_XPOS] * (g_timeStep * 0.001);
+                s_mid[j + PART_YPOS] += this.s1dot[j + PART_YPOS] * (g_timeStep * 0.001);
+                s_mid[j + PART_ZPOS] += this.s1dot[j + PART_ZPOS] * (g_timeStep * 0.001);
+                s_mid[j + PART_XVEL] += this.s1dot[j + PART_XVEL] * (g_timeStep * 0.001);
+                s_mid[j + PART_YVEL] += this.s1dot[j + PART_YVEL] * (g_timeStep * 0.001);
+                s_mid[j + PART_ZVEL] += this.s1dot[j + PART_ZVEL] * (g_timeStep * 0.001);
+            }
+            this.applyForces(s_mid, this.forceList);  // find current net force on each particle
+            let s_midDot = new Float32Array(this.partCount * PART_MAXVAR);
+            this.dotFinder(s_midDot, s_mid);
+            var j = 0;
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                this.s2[j + PART_XPOS] = s_mid[j + PART_XPOS]
+                    + 3 / 2 * (g_timeStep * 0.001) * s_midDot[j + PART_XPOS]
+                    - 1 / 2 * (g_timeStep * 0.001) * this.s1dot[j + PART_XPOS];
+                this.s2[j + PART_YPOS] = s_mid[j + PART_YPOS]
+                    + 3 / 2 * (g_timeStep * 0.001) * s_midDot[j + PART_YPOS]
+                    - 1 / 2 * (g_timeStep * 0.001) * this.s1dot[j + PART_YPOS];
+                this.s2[j + PART_ZPOS] = s_mid[j + PART_ZPOS]
+                    + 3 / 2 * (g_timeStep * 0.001) * s_midDot[j + PART_ZPOS]
+                    - 1 / 2 * (g_timeStep * 0.001) * this.s1dot[j + PART_ZPOS];
+                this.s2[j + PART_XVEL] = s_mid[j + PART_XVEL]
+                    + 3 / 2 * (g_timeStep * 0.001) * s_midDot[j + PART_XVEL]
+                    - 1 / 2 * (g_timeStep * 0.001) * this.s1dot[j + PART_XVEL];
+                this.s2[j + PART_YVEL] = s_mid[j + PART_YVEL]
+                    + 3 / 2 * (g_timeStep * 0.001) * s_midDot[j + PART_YVEL]
+                    - 1 / 2 * (g_timeStep * 0.001) * this.s1dot[j + PART_YVEL];
+                this.s2[j + PART_ZVEL] = s_mid[j + PART_ZVEL]
+                    + 3 / 2 * (g_timeStep * 0.001) * s_midDot[j + PART_ZVEL]
+                    - 1 / 2 * (g_timeStep * 0.001) * this.s1dot[j + PART_ZVEL];
+            }
             break;
         case SOLV_RUNGEKUTTA:
+            /* 4th order
+            ref: Greenbaum, Numerical Methods Design Analysis(Page 300, equation 11.22)
+            */
+            // * q2 = F(x(i)+0.5*h, y(i)+0.5*h*q1); 
+            let s_half1 = this.s1;
+            var j = 0;
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                s_half1[j + PART_XPOS] += 0.5 * (g_timeStep * 0.001) * this.s1dot[j + PART_XPOS];
+                s_half1[j + PART_YPOS] += 0.5 * (g_timeStep * 0.001) * this.s1dot[j + PART_YPOS];
+                s_half1[j + PART_ZPOS] += 0.5 * (g_timeStep * 0.001) * this.s1dot[j + PART_ZPOS];
+                s_half1[j + PART_XVEL] += 0.5 * (g_timeStep * 0.001) * this.s1dot[j + PART_XVEL];
+                s_half1[j + PART_YVEL] += 0.5 * (g_timeStep * 0.001) * this.s1dot[j + PART_YVEL];
+                s_half1[j + PART_ZVEL] += 0.5 * (g_timeStep * 0.001) * this.s1dot[j + PART_ZVEL];
+            }
+            this.applyForces(s_half1, this.forceList);  // find y'
+            let s_half1Dot = new Float32Array(this.partCount * PART_MAXVAR);
+            this.dotFinder(s_half1Dot, s_half1); //find f
+            // * q3 = F(x(i)+0.5*h, y(i)+0.5*h*q2); 
+            let s_half2 = this.s1;
+            var j = 0;
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                s_half2[j + PART_XPOS] += 0.5 * (g_timeStep * 0.001) * s_half1Dot[j + PART_XPOS];
+                s_half2[j + PART_YPOS] += 0.5 * (g_timeStep * 0.001) * s_half1Dot[j + PART_YPOS];
+                s_half2[j + PART_ZPOS] += 0.5 * (g_timeStep * 0.001) * s_half1Dot[j + PART_ZPOS];
+                s_half2[j + PART_XVEL] += 0.5 * (g_timeStep * 0.001) * s_half1Dot[j + PART_XVEL];
+                s_half2[j + PART_YVEL] += 0.5 * (g_timeStep * 0.001) * s_half1Dot[j + PART_YVEL];
+                s_half2[j + PART_ZVEL] += 0.5 * (g_timeStep * 0.001) * s_half1Dot[j + PART_ZVEL];
+            }
+            this.applyForces(s_half2, this.forceList);  // find y'
+            let s_half2Dot = new Float32Array(this.partCount * PART_MAXVAR);
+            this.dotFinder(s_half2Dot, s_half2); //find f
+            // * q4 = F(x(i)+h, y(i)+h*q3); 
+            let s_half3 = this.s1;
+            var j = 0;
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                s_half3[j + PART_XPOS] += (g_timeStep * 0.001) * s_half2Dot[j + PART_XPOS];;
+                s_half3[j + PART_YPOS] += (g_timeStep * 0.001) * s_half2Dot[j + PART_YPOS];;
+                s_half3[j + PART_ZPOS] += (g_timeStep * 0.001) * s_half2Dot[j + PART_ZPOS];;
+                s_half3[j + PART_XVEL] += (g_timeStep * 0.001) * s_half2Dot[j + PART_XVEL];
+                s_half3[j + PART_YVEL] += (g_timeStep * 0.001) * s_half2Dot[j + PART_YVEL];
+                s_half3[j + PART_ZVEL] += (g_timeStep * 0.001) * s_half2Dot[j + PART_ZVEL];
+            }
+            this.applyForces(s_half3, this.forceList);  // find y'
+            let s_half3Dot = new Float32Array(this.partCount * PART_MAXVAR);
+            this.dotFinder(s_half3Dot, s_half3); //find f
+            // * y2 = y1 + h/6*[q1 + 2q2 + 2q3 + q4]
+            var j = 0;
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                this.s2[j + PART_XPOS] = this.s1[j + PART_XPOS] + (g_timeStep * 0.001) / 6
+                    * (this.s1dot[j + PART_XPOS] + 2 * s_half1Dot[j + PART_XPOS] + 2 * s_half2Dot[j + PART_XPOS] + s_half3Dot[j + PART_XPOS]);
+                this.s2[j + PART_YPOS] = this.s1[j + PART_YPOS] + (g_timeStep * 0.001) / 6
+                    * (this.s1dot[j + PART_YPOS] + 2 * s_half1Dot[j + PART_YPOS] + 2 * s_half2Dot[j + PART_YPOS] + s_half3Dot[j + PART_YPOS]);
+                this.s2[j + PART_ZPOS] = this.s1[j + PART_ZPOS] + (g_timeStep * 0.001) / 6
+                    * (this.s1dot[j + PART_ZPOS] + 2 * s_half1Dot[j + PART_ZPOS] + 2 * s_half2Dot[j + PART_ZPOS] + s_half3Dot[j + PART_ZPOS]);
+
+                this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL] + (g_timeStep * 0.001) / 6
+                    * (this.s1dot[j + PART_XVEL] + 2 * s_half1Dot[j + PART_XVEL] + 2 * s_half2Dot[j + PART_XVEL] + s_half3Dot[j + PART_XVEL]);
+                this.s2[j + PART_YVEL] = this.s1[j + PART_YVEL] + (g_timeStep * 0.001) / 6
+                    * (this.s1dot[j + PART_YVEL] + 2 * s_half1Dot[j + PART_YVEL] + 2 * s_half2Dot[j + PART_YVEL] + s_half3Dot[j + PART_YVEL]);
+                this.s2[j + PART_ZVEL] = this.s1[j + PART_ZVEL] + (g_timeStep * 0.001) / 6
+                    * (this.s1dot[j + PART_ZVEL] + 2 * s_half1Dot[j + PART_ZVEL] + 2 * s_half2Dot[j + PART_ZVEL] + s_half3Dot[j + PART_ZVEL]);
+            }
             break;
         case SOLV_OLDGOOD: // IMPLICIT or 'reverse time' solver inverse euler
             var j = 0;
@@ -419,6 +514,8 @@ PartSys.prototype.solver = function () {
                 this.s2[j + PART_ZPOS] += this.s2[j + PART_ZVEL] * (g_timeStep * 0.001);
             }
             break;
+
+            
         default:
             console.log('?!?! unknown solver: g_partA.solvType==' + this.solvType);
             break;

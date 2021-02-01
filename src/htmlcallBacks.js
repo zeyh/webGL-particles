@@ -24,7 +24,7 @@ var g_dx; //record mouse changes
 var g_dy;
 var g_prevDx;
 var g_prevDy;
-var solverStr = ["Euler", "MidPoint", "Adams Bash", "Runge Kutta", "Inverse Euler"];
+var solverStr = ["Euler", "MidPoint", "2-Step Adams Bash", "Runge Kutta", "Backward Euler", "Backward MidPoint", "Backward Adams Bash", "Verlet", "Velocity Verlet", "Leapfrog"];
 
 function setSolver(){
     document.querySelector('#selectedSolver').innerHTML = solverStr[g_currSolverType];
@@ -383,7 +383,11 @@ function key123(ev) {
     else if (ev.keyCode == 82) { //R for adding velocity
         if (ev.shiftKey == false) {   // 'r' key: SOFT reset; boost velocity only
             console.log("r being pressed");
-            if(this.g_currSolverType == SOLV_MIDPOINT){
+            if(this.g_currSolverType == SOLV_MIDPOINT 
+                || this.g_currSolverType == SOLV_EULER
+                || this.g_currSolverType == SOLV_ADAMS_BASH
+                || this.g_currSolverType == SOLV_RUNGEKUTTA
+            ){
                 for (let index = 0; index < g_particleNum; index++) {
                     g_particleArray[index].runMode = 3;  // RUN!
                     var j = 0; // array index for particle i
