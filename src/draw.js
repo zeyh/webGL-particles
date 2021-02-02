@@ -32,7 +32,7 @@ function drawAll([grid, plane, sphere_test, sphere]) {
 
     // particle SPRINGMASS
     pushMatrix(g_modelMatrix);
-    g_modelMatrix.setTranslate(-1, 0.4, 1);
+    g_modelMatrix.setTranslate(-1, -0.5, 1);
     drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
     g_modelMatrix = popMatrix();
     pushMatrix(g_modelMatrix);

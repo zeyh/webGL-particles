@@ -57,21 +57,21 @@ References: besides the inline links in index.html, the code is modified from
 
 "use strict"
 
-var canvas;	
-var gl;	
+var canvas;
+var gl;
 var g_viewProjMatrix;
 var g_modelMatrix;
 var g_shadingScheme;
 var g_vboArray;
 
-var g_timeStep = 1000.0/60.0;			// current timestep in milliseconds (init to 1/60th sec) 
+var g_timeStep = 1000.0 / 60.0;			// current timestep in milliseconds (init to 1/60th sec) 
 var g_timeStepMin = g_timeStep;   //holds min,max timestep values since last keypress.
 var g_timeStepMax = g_timeStep;
 
 var g_particleNum = 2;
 var g_particleArray = [];
 
-function initVBOs(currScheme){
+function initVBOs(currScheme) {
     var grid = new VBO_genetic(diffuseVert, diffuseFrag, grid_vertices, grid_colors, grid_normals, null, 0);
     grid.init();
     var plane = new VBO_genetic(currScheme[0], currScheme[1], plane_vertices, plane_colors, plane_normals, plane_indices, currScheme[2]);
@@ -97,16 +97,15 @@ function initVBOs(currScheme){
     globalThis.SPRINGMASS = 2;
     var particle3 = new PartSys();
     particle3.initSpring(2); //need at least a pair
-    particle3.initShader(particleVert, particleFrag);
+    particle3.initShader(particleVert, particleFrag_square);
     g_particleArray[SPRINGMASS] = particle3;
-
     g_vboArray = [grid, plane, sphere_test, sphere];
 }
 function main() {
     console.log("I'm in main.js right now...");
-    
+
     canvas = document.getElementById('webgl');
-    gl = canvas.getContext("webgl", { preserveDrawingBuffer: true});
+    gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
     if (!gl) {
         console.log('Failed to get the rendering context for WebGL');
         return;
@@ -125,21 +124,21 @@ function main() {
         keyArrowRotateUp(ev);
         materialKeyPress(ev);
     };
-    
+
     // Set the clear color and enable the depth test
     gl.clearColor(0.15, 0.15, 0.15, 1.0);
     // gl.clearColor(0.0, 0.0, 0.0, 0.0);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);// Enable alpha blending
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Set blending function conflict with shadow...?
-    g_modelMatrix = new Matrix4(); 
+    g_modelMatrix = new Matrix4();
 
     g_shadingScheme = { //[plane, cube, cube2, sphere, sphere2, cube3] 
-        0:[PhongPhongVert,PhongPhongFrag,5],
-        1:[draggableBlinnPhongVert,draggableBlinnPhongFrag,3],
+        0: [PhongPhongVert, PhongPhongFrag, 5],
+        1: [draggableBlinnPhongVert, draggableBlinnPhongFrag, 3],
     };
 
-    initVBOs(g_shadingScheme[0]);    
+    initVBOs(g_shadingScheme[0]);
     setSolver();
 
     var tick = function () {
@@ -154,18 +153,18 @@ function main() {
         g_viewProjMatrix.setPerspective(30.0, aspectRatio, 1, 100);
         g_viewProjMatrix.lookAt(g_EyeX, g_EyeY, g_EyeZ, g_LookX, g_LookY, g_LookZ, 0, 1, 0); //center/look-at point
         g_viewProjMatrix.scale(0.4 * g_viewScale, 0.4 * g_viewScale, 0.4 * g_viewScale); //scale everything
-    
+
 
         // ! animation
         currentAngle = animate(currentAngle);
-        g_timeStep = animateTimestep(); 
-        if(g_timeStep > 200) {   // wait > 0.2 seconds
-            g_timeStep = 1000/60;
+        g_timeStep = animateTimestep();
+        if (g_timeStep > 200) {   // wait > 0.2 seconds
+            g_timeStep = 1000 / 60;
         }
-        if (g_timeStep < g_timeStepMin){
-            g_timeStepMin = g_timeStep;  
-        } 
-        else if(g_timeStep > g_timeStepMax){
+        if (g_timeStep < g_timeStepMin) {
+            g_timeStepMin = g_timeStep;
+        }
+        else if (g_timeStep > g_timeStepMax) {
             g_timeStepMax = g_timeStep;
         }
 
@@ -179,7 +178,7 @@ function main() {
 }
 
 /* the different shaders details */
-var draggableBlinnPhongVert = 
+var draggableBlinnPhongVert =
     "struct MatlT {\n" +
     "		vec3 emit;\n" + // Ke: emissive -- surface 'glow' amount (r,g,b);
     "		vec3 ambi;\n" + // Ka: ambient reflectance (r,g,b)
@@ -210,7 +209,7 @@ var draggableBlinnPhongVert =
 var draggableBlinnPhongFrag =  // ! Todo: add second head light
     'precision highp float;\n' +
     'precision highp int;\n' +
-  
+
     //--------------- GLSL Struct Definitions:
     'struct LampT {\n' +		// Describes one point-like Phong light source
     '	vec3 pos;\n' +			// (x,y,z,w); w==1.0 for local light at x,y,z position
@@ -270,7 +269,7 @@ var draggableBlinnPhongFrag =  // ! Todo: add second head light
     '}\n';
 
 
-var PhongPhongVert = 
+var PhongPhongVert =
     "struct MatlT {\n" +
     "		vec3 emit;\n" + // Ke: emissive -- surface 'glow' amount (r,g,b);
     "		vec3 ambi;\n" + // Ka: ambient reflectance (r,g,b)
@@ -298,10 +297,10 @@ var PhongPhongVert =
     "  v_Kd = u_MatlSet[0].diff; \n" + // find per-pixel diffuse reflectance from per-vertex
     "}\n";
 
-var PhongPhongFrag =  
+var PhongPhongFrag =
     'precision highp float;\n' +
     'precision highp int;\n' +
-  
+
     //--------------- GLSL Struct Definitions:
     'struct LampT {\n' +		// Describes one point-like Phong light source
     '	vec3 pos;\n' +			// (x,y,z,w); w==1.0 for local light at x,y,z position
@@ -333,7 +332,7 @@ var PhongPhongFrag =
     '  vec3 lightDirection = normalize(u_LampSet[0].pos - v_Position.xyz);\n' +
     '  vec3 eyeDirection = normalize(u_eyePosWorld - v_Position.xyz); \n' +
     '  float nDotL = max(dot(lightDirection, normal), 0.0); \n' +
-  
+
     // ? vvvvvvvvvvvvvvvvvvvvvvvv
     '  vec3 reflec = normalize(2.0*(normal * nDotL) - lightDirection); \n' + // ? phong no half
     '  float rDotV = max(dot(reflec, eyeDirection), 0.0); \n' +
@@ -375,7 +374,7 @@ var diffuseFrag = // * not used but could be used with lightSpec 0
     "}\n";
 
 
-var particleVert = 
+var particleVert =
     'precision mediump float;\n' +			// req'd in OpenGL ES if we use 'float'
     'uniform   int  u_runMode; \n' +			// particle system state: 
     'attribute float a_ptSize; \n' +	//point size
@@ -385,14 +384,14 @@ var particleVert =
     "uniform   mat4 u_MvpMatrix;\n" +
     'void main() {\n' +
     '  gl_PointSize = a_ptSize;\n' +
-    '  gl_Position = u_MvpMatrix * a_Position; \n' +	
+    '  gl_Position = u_MvpMatrix * a_Position; \n' +
     '  if(u_runMode == 0) { \n' +
     '	   v_Color = vec4(1.0, 0.0, 0.0, 1.0);	\n' + //color already assigned here		// red: 0==reset
     '  	 } \n' +
     '  else if(u_runMode == 1) {  \n' +
     '    v_Color = vec4(0.6, 0.6, 0.0, 1.0); \n' +	// yellow: 1==pause
     '    }  \n' +
-    '  else if(u_runMode == 2) { \n' +    
+    '  else if(u_runMode == 2) { \n' +
     '    v_Color = vec4(0.3, 0.8, 0.3, 1.0); \n' +	// white: 2==step
     '    } \n' +
     '  else { \n' +
@@ -405,7 +404,14 @@ var particleFrag =
     'varying vec4 v_Color; \n' +
     'void main() {\n' +
     '  float dist = distance(gl_PointCoord, vec2(0.5, 0.5)); \n' +
-    '  if(dist < 0.1) { \n' +	
-      '  	gl_FragColor = vec4((1.0-2.0*dist)*v_Color.rgb, 1.0);\n' +
-      '  } else { discard; }\n' +
+    '  if(dist < 0.1) { \n' +
+    '  	gl_FragColor = vec4((1.0-2.0*dist)*v_Color.rgb, 1.0);\n' +
+    '  } else { discard; }\n' +
+    '}\n';
+
+var particleFrag_square =
+    'precision mediump float;\n' +
+    'varying vec4 v_Color; \n' +
+    'void main() {\n' +
+    '  gl_FragColor = vec4(v_Color.rgb, 1.0);\n' +
     '}\n';

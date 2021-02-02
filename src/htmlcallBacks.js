@@ -383,6 +383,8 @@ function key123(ev) {
     else if (ev.keyCode == 82) { //R for adding velocity
         if (ev.shiftKey == false) {   // 'r' key: SOFT reset; boost velocity only
             console.log("r being pressed");
+            // g_particleArray[SPRINGMASS].s1[PART_XPOS + PART_MAXVAR] += 1;
+
             if(this.g_currSolverType == SOLV_MIDPOINT 
                 || this.g_currSolverType == SOLV_EULER
                 || this.g_currSolverType == SOLV_ADAMS_BASH
@@ -390,6 +392,9 @@ function key123(ev) {
             ){
                 for (let index = 0; index < g_particleNum; index++) {
                     g_particleArray[index].runMode = 3;  // RUN!
+                    if(index == SPRINGMASS){
+                        g_particleArray[index].s1[PART_XPOS] += 0.5;
+                    }
                     var j = 0; // array index for particle i
                     for (var i = 0; i < g_particleArray[index].partCount; i += 1, j += PART_MAXVAR) {
                         g_particleArray[index].roundRand();
@@ -734,10 +739,10 @@ function myMouseDown(ev) {
     var x = (xp - canvas.width / 2) / (canvas.width / 2);
     var y = (yp - canvas.height / 2) / (canvas.height / 2);
 
-    if (xp <= 500 && yp <= 600) { //dragging must be in correct place
-        g_isDrag = true;
-        // console.log("dragging",xp,yp )
-    }
+    // if (xp <= 500 && yp <= 600) { //dragging must be in correct place
+    //     // console.log("dragging",xp,yp )
+    // }
+    g_isDrag = true;
     // g_isDrag = true;
     g_xMclik = x;
     g_yMclik = y;
@@ -774,6 +779,11 @@ function myMouseMove(ev) {
 
     g_xMclik = x;
     g_yMclik = y;
+
+    if(g_isDrag){
+        g_particleArray[SPRINGMASS].s1[PART_XPOS] += g_xMdragTot;
+        drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
+    }
 };
 
 function myMouseUp(ev) {

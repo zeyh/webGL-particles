@@ -108,23 +108,31 @@ PartSys.prototype.initShader = function (vertSrc, fragSrc) {
 }
 
 PartSys.prototype.initSpring = function (count) {
+    console.log('spring mass now');
     // ! force-causing objects
-    var fTmp = new CForcer();       // create a force-causing object, and
-    // * earth gravity for all particles:
-    fTmp.forceType = F_GRAV_E;      // set it to earth gravity, and
-    fTmp.targFirst = 0;             // set it to affect ALL particles:
-    fTmp.partCount = -1;            // (negative value means ALL particles and IGNORE all other Cforcer members...)
-    this.forceList.push(fTmp);      // append this 'gravity' force object to 
-    // the forceList array of force-causing objects.
-    // * drag for all particles:
-    fTmp = new CForcer();           // create a NEW CForcer object 
-    fTmp.forceType = F_DRAG;        // Viscous Drag
-    fTmp.Kdrag = 0.15;              // in Euler solver, scales velocity by 0.85
+    var fTmp = new CForcer();       // create a NEW CForcer object 
+    fTmp.forceType = F_SPRING;
+    fTmp.e1 = 0;
+    fTmp.e2 = 1;
+    fTmp.K_spring = 50.0;
+    fTmp.K_springDamp = 0.8;
+    fTmp.K_restLength = 1; //spring equalibrium
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
+    fTmp = new CForcer();       // create a NEW CForcer object 
+    fTmp.forceType = F_DRAG;
+    fTmp.Kdrag = fTmp.K_springDamp;
     fTmp.targFirst = 0;             // apply it to ALL particles:
     fTmp.partCount = -1;
     this.forceList.push(fTmp);
-    console.log("\t\t", this.forceList.length, "CForcer objects:");
 
+    console.log("\t\t", this.forceList.length, "CForcer objects:");
+    for (i = 0; i < this.forceList.length; i++) {
+        console.log("CForceList[", i, "]");
+        this.forceList[i].printMe();
+    }
     // ! ode constants
     this.partCount = count;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR);
@@ -136,54 +144,31 @@ PartSys.prototype.initSpring = function (count) {
     this.grav = 9.832; //gravity constant
     this.resti = 1.0; //inelastic
     this.runMode = 3;
-    // this.solvType = 1;
-    this.solvType = g_currSolverType;
+    this.solvType = SOLV_MIDPOINT;
     this.bounceType = 1;
 
-    //* initial conditions
+    //* initial conditions y0
     var j = 0;
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
         this.roundRand(); // * y(0)
-        this.s1[j + PART_XPOS] = -0.8 + 0.1 * this.randX;
-        this.s1[j + PART_YPOS] = -0.8 + 0.1 * this.randY;
-        this.s1[j + PART_ZPOS] = -0.8 + 0.1 * this.randZ;
+        this.s1[j + PART_XPOS] = (i % 2 == 1) ? 0.2 : -0.2;
+        this.s1[j + PART_YPOS] = 0.0;
+        this.s1[j + PART_ZPOS] = 0.0;
         this.s1[j + PART_WPOS] = 1.0;
-        this.s1[j + PART_R] = Math.abs(this.randX);
-        this.s1[j + PART_G] = Math.abs(this.randY);
-        this.s1[j + PART_B] = 0.9;
+        this.s1[j + PART_R] = 0.9;
+        this.s1[j + PART_G] = 0.5 + Math.abs(this.randY) * 0.5;
+        this.s1[j + PART_B] = Math.abs(this.randZ);
         this.roundRand(); // * y'(0)
-        this.s1[j + PART_XVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randX);
-        this.s1[j + PART_YVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randY);
-        this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.4 + 0.2 * this.randZ);
-        this.s1[j + PART_DIAM] = 100; 
+        this.s1[j + PART_XVEL] = 0.0;
+        this.s1[j + PART_YVEL] = 0.0;
+        this.s1[j + PART_ZVEL] = 0.0;
+        this.s1[j + PART_DIAM] = 10;
         this.s1[j + PART_MASS] = this.s1[j + PART_DIAM];
         this.s1[j + PART_RENDMODE] = 0.0;
-        this.s1[j + PART_AGE] = 30 + 100 * Math.random();
+        this.s1[j + PART_AGE] = 10;
         this.s2.set(this.s1);
     }
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
-}
-
-PartSys.prototype.switchToMe = function () {
-    gl.useProgram(this.shaderLoc);
-    gl.uniform1i(this.runModeID, this.runMode); //bound keyboard callbacks
-
-    // ! bindBuffer vertexAttribPointer enableVertexAttribArray
-    this.FSIZE = this.s1.BYTES_PER_ELEMENT;
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.vboID); // ! 👈 finally debugged......
-
-    gl.vertexAttribPointer(this.a_PositionID, 4, gl.FLOAT, false,
-        PART_MAXVAR * this.FSIZE, PART_XPOS * this.FSIZE);
-    gl.enableVertexAttribArray(this.a_PositionID);
-
-    gl.vertexAttribPointer(this.a_ColorID, 4, gl.FLOAT, false,
-        PART_MAXVAR * this.FSIZE, PART_R * this.FSIZE);
-    gl.enableVertexAttribArray(this.a_ColorID);
-
-    gl.vertexAttribPointer(this.a_ptSizeID, 1, gl.FLOAT, false,
-        PART_MAXVAR * this.FSIZE, PART_DIAM * this.FSIZE);
-    gl.enableVertexAttribArray(this.a_ptSizeID);
-
 }
 
 PartSys.prototype.initBouncy3D = function (count) {
@@ -389,8 +374,32 @@ PartSys.prototype.applyForces = function (s, fList) {
                 }
                 break;
             case F_SPRING:
-                console.log("PartSys.applyForces(), fList[", k, "].forceType:",
-                    fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                // fTmp.e1 = 0;              
+                // fTmp.e2 = 1;             
+                // fTmp.K_spring = 100.0;             
+                // fTmp.K_springDamp = 0.8;          
+                // fTmp.K_restLength = 0.3;      
+                // 𝑚𝑥¨1=−𝑘(𝑥1−𝑥2+𝑙) https://physics.stackexchange.com/questions/61809/two-masses-attached-to-a-spring
+                // 𝑚𝑥¨2=−𝑘(𝑥2−𝑥1−𝑙)
+                //get mass 1 and mass 2
+                let m1 = s.slice(0, fList[k].e2 * PART_MAXVAR);
+                let m2 = s.slice(fList[k].e2 * PART_MAXVAR, s.length);
+                //calculate x1 - x2
+                let eucDist = Math.sqrt(Math.pow(m1[PART_XPOS] - m2[PART_XPOS], 2)
+                    + Math.pow(m1[PART_YPOS] - m2[PART_YPOS], 2)
+                    + Math.pow(m1[PART_ZPOS] - m2[PART_ZPOS], 2));
+                var j = m * PART_MAXVAR; //* Note: -1*(1-2*m) map {0,1} to {-1,1} indicating the sign
+                for (; m < mmax; m++, j += PART_MAXVAR) {
+                    s[j + PART_X_FTOT] = -1 * fList[k].K_spring *
+                        (eucDist * (1 - 2 * m) + fList[k].K_restLength * (1 - 2 * m))
+                        * (m2[PART_XPOS] - m1[PART_XPOS]) / eucDist;
+                    s[j + PART_Y_FTOT] = -1 * fList[k].K_spring *
+                        ( eucDist * (1 - 2 * m)  + fList[k].K_restLength * (1 - 2 * m)) 
+                        * (m2[PART_YPOS] - m1[PART_YPOS])/eucDist;
+                    s[j + PART_Z_FTOT] = -1 * fList[k].K_spring *
+                        ( eucDist * (1 - 2 * m)  + fList[k].K_restLength * (1 - 2 * m))
+                        * (m2[PART_ZPOS] - m1[PART_ZPOS])/eucDist;
+                }
                 break;
             case F_SPRINGSET:
                 console.log("PartSys.applyForces(), fList[", k, "].forceType:",
