@@ -115,8 +115,8 @@ PartSys.prototype.initSpring = function (count) {
     fTmp.e1 = 0;
     fTmp.e2 = 1;
     fTmp.K_spring = 50.0;
-    fTmp.K_springDamp = 0.8;
-    fTmp.K_restLength = 1; //spring equalibrium
+    fTmp.K_springDamp = 0.3;
+    fTmp.K_restLength = 0.3; //spring equalibrium
     fTmp.targFirst = 0;
     fTmp.partCount = -1;
     this.forceList.push(fTmp);
@@ -163,7 +163,7 @@ PartSys.prototype.initSpring = function (count) {
         this.s1[j + PART_YVEL] = 0.0;
         this.s1[j + PART_ZVEL] = 0.0;
         this.s1[j + PART_DIAM] = 10;
-        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM];
+        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM]/10;
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 10;
         this.s2.set(this.s1);
@@ -390,15 +390,16 @@ PartSys.prototype.applyForces = function (s, fList) {
                     + Math.pow(m1[PART_ZPOS] - m2[PART_ZPOS], 2));
                 var j = m * PART_MAXVAR; //* Note: -1*(1-2*m) map {0,1} to {-1,1} indicating the sign
                 for (; m < mmax; m++, j += PART_MAXVAR) {
-                    s[j + PART_X_FTOT] = -1 * fList[k].K_spring *
-                        (eucDist * (1 - 2 * m) + fList[k].K_restLength * (1 - 2 * m))
-                        * (m2[PART_XPOS] - m1[PART_XPOS]) / eucDist;
-                    s[j + PART_Y_FTOT] = -1 * fList[k].K_spring *
-                        ( eucDist * (1 - 2 * m)  + fList[k].K_restLength * (1 - 2 * m)) 
-                        * (m2[PART_YPOS] - m1[PART_YPOS])/eucDist;
-                    s[j + PART_Z_FTOT] = -1 * fList[k].K_spring *
-                        ( eucDist * (1 - 2 * m)  + fList[k].K_restLength * (1 - 2 * m))
-                        * (m2[PART_ZPOS] - m1[PART_ZPOS])/eucDist;
+                    s[j + PART_X_FTOT] += (m2[PART_XPOS] - m1[PART_XPOS]) / eucDist * fList[k].K_spring
+                        * (eucDist - fList[k].K_restLength) / s[j + PART_MASS]
+                        * (1 - 2 * m);
+                    s[j + PART_Y_FTOT] += (m2[PART_YPOS] - m1[PART_YPOS]) / eucDist * fList[k].K_spring
+                        * (eucDist - fList[k].K_restLength) / s[j + PART_MASS]
+                        * (1 - 2 * m);
+                    s[j + PART_Z_FTOT] += (m2[PART_ZPOS] - m1[PART_ZPOS]) / eucDist * fList[k].K_spring
+                        * (eucDist - fList[k].K_restLength) / s[j + PART_MASS]
+                        * (1 - 2 * m);
+
                 }
                 break;
             case F_SPRINGSET:

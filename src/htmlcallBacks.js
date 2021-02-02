@@ -383,7 +383,9 @@ function key123(ev) {
     else if (ev.keyCode == 82) { //R for adding velocity
         if (ev.shiftKey == false) {   // 'r' key: SOFT reset; boost velocity only
             console.log("r being pressed");
-            // g_particleArray[SPRINGMASS].s1[PART_XPOS + PART_MAXVAR] += 1;
+            g_particleArray[SPRINGMASS].s1[PART_XPOS] += 1;
+            g_particleArray[SPRINGMASS].s1[PART_XPOS + PART_MAXVAR] -= 1;
+            drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
 
             if(this.g_currSolverType == SOLV_MIDPOINT 
                 || this.g_currSolverType == SOLV_EULER
