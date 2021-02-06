@@ -24,25 +24,25 @@ function drawAll([grid, plane, sphere_test, sphere]) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
 
     // particle BOUNCYBALL
-    pushMatrix(g_modelMatrix);
-    g_modelMatrix.setTranslate(1, 0.4, 1);
-    drawParticle(BOUNCYBALL, g_modelMatrix, g_viewProjMatrix);
-    g_modelMatrix = popMatrix();
-    pushMatrix(g_modelMatrix);
-
-    // particle SPRINGMASS
-    pushMatrix(g_modelMatrix);
-    g_modelMatrix.setTranslate(-1, -0.5, 1);
-    drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
-    g_modelMatrix = popMatrix();
-    pushMatrix(g_modelMatrix);
-
-    // // particle2 
     // pushMatrix(g_modelMatrix);
-    // g_modelMatrix.setTranslate(-1, 0.4, 1);
-    // drawParticle(TEST, g_modelMatrix, g_viewProjMatrix);
+    // g_modelMatrix.setTranslate(1, 0.4, 1);
+    // drawParticle(BOUNCYBALL, g_modelMatrix, g_viewProjMatrix);
     // g_modelMatrix = popMatrix();
     // pushMatrix(g_modelMatrix);
+
+    // particle SPRINGMASS
+    // pushMatrix(g_modelMatrix);
+    // g_modelMatrix.setTranslate(-1, -0.5, 1);
+    // drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
+    // g_modelMatrix = popMatrix();
+    // pushMatrix(g_modelMatrix);
+
+    // particle testing bouncy ball
+    pushMatrix(g_modelMatrix);
+    g_modelMatrix.setTranslate(-1, 0.4, 1);
+    drawParticle(TEST, g_modelMatrix, g_viewProjMatrix);
+    g_modelMatrix = popMatrix();
+    pushMatrix(g_modelMatrix);
 
 
     //draw draggable light source on sphere

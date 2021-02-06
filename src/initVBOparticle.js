@@ -19,22 +19,18 @@ const PART_RENDMODE = 15;
 const PART_AGE = 16;  // # of frame-times until re-initializing
 const PART_MAXVAR = 17; // max index = size of array
 
-const SOLV_EULER = 0;       // Euler integration: forward,explicit,...
-const SOLV_MIDPOINT = 1;       // Midpoint Method (see Pixar Tutorial)
-const SOLV_ADAMS_BASH = 2;       // Adams-Bashforth Explicit Integrator
-const SOLV_RUNGEKUTTA = 3;       // Arbitrary degree, set by 'solvDegree'
-const SOLV_OLDGOOD = 4;      //  early accidental 'good-but-wrong' solver
-const SOLV_BACK_EULER = 5;      // 'Backwind' or Implicit Euler
-const SOLV_BACK_MIDPT = 6;      // 'Backwind' or Implicit Midpoint
-const SOLV_BACK_ADBASH = 7;      // 'Backwind' or Implicit Adams-Bashforth
-const SOLV_VERLET = 8;       // Verlet semi-implicit integrator;
-const SOLV_VEL_VERLET = 9;       // 'Velocity-Verlet'semi-implicit integrator
-const SOLV_LEAPFROG = 10;      // 'Leapfrog' integrator
-const SOLV_MAX = 11;      // number of solver types available.
+const SOLV_EULER = 5;       // Euler integration: forward,explicit,...
+const SOLV_MIDPOINT = 4;       // Midpoint Method (see Pixar Tutorial)
+const SOLV_ADAMS_BASH = 3;       // Adams-Bashforth Explicit Integrator
+const SOLV_RUNGEKUTTA = 2;       // Arbitrary degree, set by 'solvDegree'
+const SOLV_OLDGOOD = -1;      //  early accidental 'good-but-wrong' solver
+const SOLV_BACK_EULER = 1;      // 'Backwind' or Implicit Euler
+const SOLV_VEL_VERLET = 0;       // 'Velocity-Verlet'semi-implicit integrator
+const SOLV_MAX = 6;      // number of solver types available.
 const NU_EPSILON = 10E-15;         // a tiny amount; a minimum vector length
 // to use to avoid 'divide-by-zero'
 
-var g_currSolverType = 4;
+var g_currSolverType = 0;
 
 function PartSys() {
     this.randX = 0;
@@ -107,8 +103,8 @@ PartSys.prototype.initShader = function (vertSrc, fragSrc) {
 
 }
 
-PartSys.prototype.initSpring = function (count) {
-    console.log('spring mass now');
+PartSys.prototype.initSpringSet = function (count) {
+    console.log('spring set now');
     // ! force-causing objects
     var fTmp = new CForcer();       // create a NEW CForcer object 
     fTmp.forceType = F_SPRING;
@@ -144,7 +140,7 @@ PartSys.prototype.initSpring = function (count) {
     this.grav = 9.832; //gravity constant
     this.resti = 1.0; //inelastic
     this.runMode = 3;
-    this.solvType = SOLV_MIDPOINT;
+    this.solvType = g_currSolverType;
     this.bounceType = 1;
 
     //* initial conditions y0
@@ -163,7 +159,70 @@ PartSys.prototype.initSpring = function (count) {
         this.s1[j + PART_YVEL] = 0.0;
         this.s1[j + PART_ZVEL] = 0.0;
         this.s1[j + PART_DIAM] = 10;
-        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM]/10;
+        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM] / 10;
+        this.s1[j + PART_RENDMODE] = 0.0;
+        this.s1[j + PART_AGE] = 10;
+        this.s2.set(this.s1);
+    }
+    this.FSIZE = this.s1.BYTES_PER_ELEMENT;
+}
+PartSys.prototype.initSpring = function (count) {
+    console.log('spring mass now');
+    // ! force-causing objects
+    var fTmp = new CForcer();       // create a NEW CForcer object 
+    fTmp.forceType = F_SPRING;
+    fTmp.e1 = 0;
+    fTmp.e2 = 1;
+    fTmp.K_spring = 500.0;
+    fTmp.K_springDamp = 0.001;
+    fTmp.K_restLength = 0.5; //spring equalibrium
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
+    fTmp = new CForcer();       // create a NEW CForcer object 
+    fTmp.forceType = F_DRAG;
+    fTmp.Kdrag = fTmp.K_springDamp;
+    fTmp.targFirst = 0;             // apply it to ALL particles:
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
+    console.log("\t\t", this.forceList.length, "CForcer objects:");
+    for (i = 0; i < this.forceList.length; i++) {
+        console.log("CForceList[", i, "]");
+        this.forceList[i].printMe();
+    }
+    // ! ode constants
+    this.partCount = count;
+    this.s1 = new Float32Array(this.partCount * PART_MAXVAR);
+    this.s2 = new Float32Array(this.partCount * PART_MAXVAR);
+    this.s1dot = new Float32Array(this.partCount * PART_MAXVAR);
+
+    this.INIT_VEL = 0.15 * 60.0;
+    this.drag = 0.985; //friction force
+    this.grav = 9.832; //gravity constant
+    this.resti = 1.0; //inelastic
+    this.runMode = 3;
+    this.solvType = g_currSolverType;
+    this.bounceType = 1;
+
+    //* initial conditions y0
+    var j = 0;
+    for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+        this.roundRand(); // * y(0)
+        this.s1[j + PART_XPOS] = (i % 2 == 1) ? 0.2 : -0.2;
+        this.s1[j + PART_YPOS] = 0.0;
+        this.s1[j + PART_ZPOS] = 0.0;
+        this.s1[j + PART_WPOS] = 1.0;
+        this.s1[j + PART_R] = 0.9;
+        this.s1[j + PART_G] = 0.5 + Math.abs(this.randY) * 0.5;
+        this.s1[j + PART_B] = Math.abs(this.randZ);
+        this.roundRand(); // * y'(0)
+        this.s1[j + PART_XVEL] = 0.0;
+        this.s1[j + PART_YVEL] = 0.0;
+        this.s1[j + PART_ZVEL] = 0.0;
+        this.s1[j + PART_DIAM] = 10;
+        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM] / 100;
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 10;
         this.s2.set(this.s1);
@@ -220,7 +279,6 @@ PartSys.prototype.initBouncy3D = function (count) {
     this.grav = 9.832; //gravity constant
     this.resti = 1.0; //inelastic
     this.runMode = 3;
-    // this.solvType = 1;
     this.solvType = g_currSolverType;
     this.bounceType = 1;
 
@@ -602,47 +660,65 @@ PartSys.prototype.solver = function () {
             w'=w(i)+h*f(t(i),w(i));
             w(i+1)=w(i)+h*f(t(i+1),w');
             */
-            let s_mid_backE = this.s1;
-            this.eulerMethod(s_mid_backE, this.s1, this.s1dot, g_timeStep * 0.001);
+            this.eulerMethod(this.s2, this.s1, this.s1dot, (g_timeStep * 0.001));
+            this.applyForces(this.s2, this.forceList);
+            let s2dotBE = new Float32Array(this.partCount * PART_MAXVAR);
+            this.dotFinder(s2dotBE, this.s2);
+            let s3 = new Float32Array(this.partCount * PART_MAXVAR);
+
             var j = 0;
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                this.applyForces(s_mid_backE, this.forceList);
-                let s_mid_backEDot = new Float32Array(this.partCount * PART_MAXVAR);
-                this.dotFinder(s_mid_backEDot, s_mid_backE);
-                // this.s2[j + PART_XPOS] = this.s1[j + PART_XPOS] +
+                //* s1 ~ s2 -h*s2dot
+                s3[j + PART_XPOS] = this.s2[j + PART_XPOS] - s2dotBE[j + PART_XPOS] * (g_timeStep * 0.001);
+                s3[j + PART_YPOS] = this.s2[j + PART_YPOS] - s2dotBE[j + PART_YPOS] * (g_timeStep * 0.001);
+                s3[j + PART_ZPOS] = this.s2[j + PART_ZPOS] - s2dotBE[j + PART_ZPOS] * (g_timeStep * 0.001);
+                s3[j + PART_XVEL] = this.s2[j + PART_XVEL] - s2dotBE[j + PART_XVEL] * (g_timeStep * 0.001);
+                s3[j + PART_YVEL] = this.s2[j + PART_YVEL] - s2dotBE[j + PART_YVEL] * (g_timeStep * 0.001);
+                s3[j + PART_ZVEL] = this.s2[j + PART_ZVEL] - s2dotBE[j + PART_ZVEL] * (g_timeStep * 0.001);
             }
-        case SOLV_VERLET:
-            /* https://en.wikipedia.org/wiki/Verlet_integration 
-            x_{n+1} = 2*x_n - x_{n-1} + 1/2at^2
-            */
-            //one step backward (minus the gradient) & one step forward
-            let s_mid_verlet = this.s1;
+            let sErr = new Float32Array(this.partCount * PART_MAXVAR);
             var j = 0;
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                s_mid_verlet[j + PART_XPOS] = this.s1[j + PART_XPOS] - this.s1dot[j + PART_XPOS] * (g_timeStep * 0.001)
-                    + 1 / 2 * this.s1dot[j + PART_XVEL] * Math.pow(g_timeStep * 0.001, 2);
-                s_mid_verlet[j + PART_YPOS] = this.s1[j + PART_YPOS] - this.s1dot[j + PART_YPOS] * (g_timeStep * 0.001)
-                    + 1 / 2 * this.s1dot[j + PART_XVEL] * Math.pow(g_timeStep * 0.001, 2);
-                s_mid_verlet[j + PART_ZPOS] = this.s1[j + PART_ZPOS] - this.s1dot[j + PART_ZPOS] * (g_timeStep * 0.001)
-                    + 1 / 2 * this.s1dot[j + PART_XVEL] * Math.pow(g_timeStep * 0.001, 2);
-                // s_mid_verlet[j + PART_XVEL] += this.s1[j + PART_XVEL] * (g_timeStep * 0.001);
-                // s_mid_verlet[j + PART_YVEL] += this.s1[j + PART_YVEL] * (g_timeStep * 0.001);
-                // s_mid_verlet[j + PART_ZVEL] += this.s1[j + PART_ZVEL] * (g_timeStep * 0.001);
+                //Find residue sErr
+                sErr[j + PART_XPOS] = (this.s1[j + PART_XPOS] - s3[j + PART_XPOS]);
+                sErr[j + PART_YPOS] = (this.s1[j + PART_YPOS] - s3[j + PART_YPOS]);
+                sErr[j + PART_ZPOS] = (this.s1[j + PART_ZPOS] - s3[j + PART_ZPOS]);
+                sErr[j + PART_XVEL] = (this.s1[j + PART_XVEL] - s3[j + PART_XVEL]);
+                sErr[j + PART_YVEL] = (this.s1[j + PART_YVEL] - s3[j + PART_YVEL]);
+                sErr[j + PART_ZVEL] = (this.s1[j + PART_ZVEL] - s3[j + PART_ZVEL]);
+                //Correct half the error:
+                this.s2[j + PART_XPOS] += sErr[j + PART_XPOS] * 0.5;
+                this.s2[j + PART_YPOS] += sErr[j + PART_YPOS] * 0.5;
+                this.s2[j + PART_ZPOS] += sErr[j + PART_ZPOS] * 0.5;
+                this.s2[j + PART_XVEL] += sErr[j + PART_XVEL] * 0.5;
+                this.s2[j + PART_YVEL] += sErr[j + PART_YVEL] * 0.5;
+                this.s2[j + PART_ZVEL] += sErr[j + PART_ZVEL] * 0.5;
             }
-            this.applyForces(s_mid_verlet, this.forceList);  // find y'
-            let s_midDot_verlet = new Float32Array(this.partCount * PART_MAXVAR);
-            this.dotFinder(s_midDot_verlet, s_mid_verlet); //find f
+            // console.log(this.s2);
+            break;
+
+        case SOLV_VEL_VERLET:
+            // s2.pos = s1.pos + s1.vel*h + s1.acc*(h^2/2);
             var j = 0;
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                this.s2[j + PART_XPOS] = 2 * s_mid_verlet[j + PART_XPOS] - this.s1[j + PART_XPOS]
-                    + s_midDot_verlet[j + PART_XVEL] * Math.pow(g_timeStep * 0.001, 2);
-                this.s2[j + PART_YPOS] = 2 * s_mid_verlet[j + PART_YPOS] - this.s1[j + PART_YPOS]
-                    + s_midDot_verlet[j + PART_YVEL] * Math.pow(g_timeStep * 0.001, 2);
-                this.s2[j + PART_ZPOS] = 2 * s_mid_verlet[j + PART_ZPOS] - this.s1[j + PART_ZPOS]
-                    + s_midDot_verlet[j + PART_ZVEL] * Math.pow(g_timeStep * 0.001, 2);
-                this.s2[j + PART_XVEL] += s_midDot_verlet[j + PART_XVEL] * (g_timeStep * 0.001);
-                this.s2[j + PART_YVEL] += s_midDot_verlet[j + PART_YVEL] * (g_timeStep * 0.001);
-                this.s2[j + PART_ZVEL] += s_midDot_verlet[j + PART_ZVEL] * (g_timeStep * 0.001);
+                this.s2[j + PART_XPOS] = this.s1[j + PART_XPOS] + this.s1[j + PART_XVEL] * (g_timeStep * 0.001)
+                    + this.s1dot[j + PART_XVEL] * Math.pow(g_timeStep * 0.001, 2) / 2;
+                this.s2[j + PART_YPOS] = this.s1[j + PART_YPOS] + this.s1[j + PART_YVEL] * (g_timeStep * 0.001)
+                    + this.s1dot[j + PART_YVEL] * Math.pow(g_timeStep * 0.001, 2) / 2;
+                this.s2[j + PART_ZPOS] = this.s1[j + PART_ZPOS] + this.s1[j + PART_ZVEL] * (g_timeStep * 0.001)
+                    + this.s1dot[j + PART_ZVEL] * Math.pow(g_timeStep * 0.001, 2) / 2;
+            }
+            // applyallforces(s2) to find s2''
+            this.applyForces(this.s2, this.forceList);
+            let s2dot = new Float32Array(this.partCount * PART_MAXVAR);
+            this.dotFinder(s2dot, this.s2)
+            // estimate s2.vel from average of s1and s2 accelerations
+            // s2.vel = s1.vel +  (s2.acc + s1.acc)*(h/2)
+            var j = 0;
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL] + (s2dot[j + PART_XVEL] + this.s1dot[j + PART_XVEL]) * g_timeStep * 0.001 / 2;
+                this.s2[j + PART_YVEL] = this.s1[j + PART_YVEL] + (s2dot[j + PART_YVEL] + this.s1dot[j + PART_YVEL]) * g_timeStep * 0.001 / 2;
+                this.s2[j + PART_ZVEL] = this.s1[j + PART_ZVEL] + (s2dot[j + PART_ZVEL] + this.s1dot[j + PART_ZVEL]) * g_timeStep * 0.001 / 2;
             }
             break;
         default:
@@ -663,6 +739,7 @@ PartSys.prototype.eulerMethod = function (s2, s1, s1dot, h) {
         s2[j + PART_YVEL] = s1[j + PART_YVEL] + s1dot[j + PART_YVEL] * h;
         s2[j + PART_ZVEL] = s1[j + PART_ZVEL] + s1dot[j + PART_ZVEL] * h;
     }
+    return s2;
 }
 
 PartSys.prototype.doConstraints = function () {

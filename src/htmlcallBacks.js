@@ -24,16 +24,17 @@ var g_dx; //record mouse changes
 var g_dy;
 var g_prevDx;
 var g_prevDy;
-var solverStr = ["Euler", "MidPoint", "2-Step Adams Bash", "Runge Kutta (time??)", "Default Solver", "Backward Euler(na)", "Backward MidPoint(na)", "Backward Adams Bash(na)", "Verlet(buggy...)", "Velocity Verlet(na)", "Leapfrog(na)"];
+var solverStr = ["Velocity Verlet", "Backward Euler", 
+    "Runge Kutta 4", "2-Step Adams Bash", "MidPoint", "Euler"];
 
-function setSolver(){
+function setSolver() {
     document.querySelector('#selectedSolver').innerHTML = solverStr[g_currSolverType];
-    for(let i=0; i<solverStr.length; i++){
-        document.getElementById('myDropdown').innerHTML += 
-        '<a class="solverType" onclick="changeSolver('+i+')">'+solverStr[i]+'</a>';
+    for (let i = 0; i < solverStr.length; i++) {
+        document.getElementById('myDropdown').innerHTML +=
+            '<a class="solverType" onclick="changeSolver(' + i + ')">' + solverStr[i] + '</a>';
     }
 }
-function changeSolver(currSolverIdx){
+function changeSolver(currSolverIdx) {
     g_currSolverType = currSolverIdx;
     document.querySelector('#selectedSolver').innerHTML = solverStr[g_currSolverType];
     for (let index = 0; index < g_particleNum; index++) {
@@ -387,14 +388,16 @@ function key123(ev) {
             g_particleArray[SPRINGMASS].s1[PART_XPOS + PART_MAXVAR] -= 1;
             drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
 
-            if(this.g_currSolverType == SOLV_MIDPOINT 
+            if (this.g_currSolverType == SOLV_MIDPOINT
                 || this.g_currSolverType == SOLV_EULER
                 || this.g_currSolverType == SOLV_ADAMS_BASH
                 || this.g_currSolverType == SOLV_RUNGEKUTTA
-            ){
+                || this.g_currSolverType == SOLV_BACK_EULER
+                || this.g_currSolverType == SOLV_VEL_VERLET
+            ) {
                 for (let index = 0; index < g_particleNum; index++) {
                     g_particleArray[index].runMode = 3;  // RUN!
-                    if(index == SPRINGMASS){
+                    if (index == SPRINGMASS) {
                         g_particleArray[index].s1[PART_XPOS] += 0.5;
                     }
                     var j = 0; // array index for particle i
@@ -423,7 +426,7 @@ function key123(ev) {
                     }
                 }
             }
-            else{
+            else {
                 for (let index = 0; index < g_particleNum; index++) {
                     g_particleArray[index].runMode = 3;  // RUN!
                     var j = 0; // array index for particle i
@@ -782,7 +785,7 @@ function myMouseMove(ev) {
     g_xMclik = x;
     g_yMclik = y;
 
-    if(g_isDrag){
+    if (g_isDrag) {
         g_particleArray[SPRINGMASS].s1[PART_XPOS] += g_xMdragTot;
         drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
     }

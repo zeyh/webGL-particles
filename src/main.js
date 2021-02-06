@@ -16,43 +16,31 @@ References: besides the inline links in index.html, the code is modified from
     Done: debug buffer overflow for plane, modelMatrix not pushing correctly
     Done: dotFinder(), s1dot, applyForce
     Done: multiple 3D bouncy movement with color with R control
-    Done: fix camera viewpoint/aim point
-
-    ? Doing[0.3d] solvers*2
-    ? Doing[1.5d]: spring mass system
+    Done: fix camera viewpoint/aim point  (‘strafe’ perpendicular)
+    Done: explicit solvers*3 basic spring mass pair
+    * Almost: 3D Explicit & implicit solvers*9
+    * Almost: onscreen instructions
+    ? Doing[0.3d] backward euler + debug spring-mass
+    ? Doing[2d]: mass-spring like linked systems with interactions (cloth-like)
 
     Todo[1.5d]: burning flame within a cube [600+]
-    Todo[2d]: 3D Explicit & implicit solvers*9
-
     Todo[1d]: limit particle in shapes[box, sphere, cylinder]
     Todo[2d]: tornados within cylinder [300+]
     Todo[2d]: g_partA: boids with a) separation, b) cohesion, c) alignment, and d) evasion
-    Todo[2d]: mass-spring like linked systems with interactions (cloth-like)
     Todo[2d]: fluids
     Todo[1d]: textures 
-    Todo[0.2d]: get fixed camera view (‘strafe’ perpendicular)
-    Todo[0.3d]: onscreen instructions
+    Todo[1d+]: cohesive
 
     Note: 
         console.log(JSON.parse(JSON.stringify(g_particleArray[index].s1)));
 
-    FIXME: 
+    🐞 FIXME: 
 
     ! need testing/clearify: 
         run together at ‘interactive’ rates (~3 frames/second (FPS))?
-        other constraint type ?
-        novel rendering methods ?
+        other constraint type ? novel rendering methods ?
 
-    ! missing: user controls:
-        --f/F fountain motion
-        --b/B key to change bounce scheme (06)
-        --r/R key to ''refresh' or 'Reset' the bouncy ball;
-        --p/P key to pause/unpause the bouncy ball;
-        --SPACE BAR to single-step the bouncy ball.
-        --c/C key to toggle WebGL screen-clearing in draw() fcn. isClear
-        --d/D key to adjust drag up or down;
-        --g/G key to adjust gravity up or down.
-    ! 🐞: draggable blin-phong light direction: mainly black
+
 */
 
 "use strict"
@@ -83,7 +71,7 @@ function initVBOs(currScheme) {
 
     globalThis.TEST = 0;
     var particle1 = new PartSys();
-    particle1.initBouncy3D(10);
+    particle1.initBouncy3D(100);
     particle1.initShader(particleVert, particleFrag);
     g_particleArray[TEST] = particle1;
 
@@ -96,7 +84,7 @@ function initVBOs(currScheme) {
 
     globalThis.SPRINGMASS = 2;
     var particle3 = new PartSys();
-    particle3.initSpring(2); //need at least a pair
+    particle3.initSpring(2); //need to be 2
     particle3.initShader(particleVert, particleFrag_square);
     g_particleArray[SPRINGMASS] = particle3;
     g_vboArray = [grid, plane, sphere_test, sphere];
