@@ -18,12 +18,12 @@ References: besides the inline links in index.html, the code is modified from
     Done: multiple 3D bouncy movement with color with R control
     Done: fix camera viewpoint/aim point  (‘strafe’ perpendicular)
     Done: explicit solvers*3 basic spring mass pair
-    * Almost: 3D Explicit & implicit solvers*9
+    Done: 3D Explicit & implicit solvers*5
     * Almost: onscreen instructions
-    ? Doing[0.3d] backward euler + debug spring-mass
-    ? Doing[2d]: mass-spring like linked systems with interactions (cloth-like)
 
-    Todo[1.5d]: burning flame within a cube [600+]
+    ? Doing[2d]: mass-spring like linked systems with interactions (cloth-like)
+    ? Doing[1.5d]: fire🔥
+
     Todo[1d]: limit particle in shapes[box, sphere, cylinder]
     Todo[2d]: tornados within cylinder [300+]
     Todo[2d]: g_partA: boids with a) separation, b) cohesion, c) alignment, and d) evasion
@@ -87,6 +87,13 @@ function initVBOs(currScheme) {
     particle3.initSpring(2); //need to be 2
     particle3.initShader(particleVert, particleFrag_square);
     g_particleArray[SPRINGMASS] = particle3;
+
+    globalThis.FIRE = 3;
+    var particle3 = new PartSys();
+    particle3.initFire(600); //need to be 2
+    particle3.initShader(particleVert, particleFrag);
+    g_particleArray[FIRE] = particle3;
+
     g_vboArray = [grid, plane, sphere_test, sphere];
 }
 function main() {
