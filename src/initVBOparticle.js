@@ -115,12 +115,30 @@ PartSys.prototype.initBoid = function (count) {
      d) evasion
     */
     // ! force-causing objects
-    var fTmp = new CForcer();       // create a force-causing object, and
-    // * earth gravity for all particles:
-    fTmp.forceType = F_SEPERATION;      // set it to earth gravity, and
-    fTmp.targFirst = 0;             // set it to affect ALL particles:
-    fTmp.partCount = -1;            // (negative value means ALL particles and IGNORE all other Cforcer members...)
-    this.forceList.push(fTmp);      // append this 'gravity' force object to 
+    var fTmp = new CForcer();
+    fTmp.forceType = F_SEPERATION;
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
+    fTmp = new CForcer();
+    fTmp.forceType = F_ALIGN;
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
+    fTmp = new CForcer();
+    fTmp.forceType = F_COHESION;
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
+    fTmp = new CForcer();
+    fTmp.forceType = F_FLY; //evation
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
     console.log("\t\t", this.forceList.length, "CForcer objects:");
     console.log("\t\t", this.limitList.length, "CLimit objects.");
 
@@ -140,7 +158,7 @@ PartSys.prototype.initBoid = function (count) {
     for (let i = 0; i < this.partCount; i++) {
         this.neighbors.push([]);
     }
-    this.neighborRadius = 0.2;
+    this.neighborRadius = 0.15;
 
     //* initial conditions
     var j = 0;
@@ -178,7 +196,7 @@ function calEucDist(m1, m2) {
         + Math.pow(m1[PART_ZPOS] - m2[PART_ZPOS], 2));
 }
 
-function eucDistIndv(x1,y1,z1, x2,y2,z2) {
+function eucDistIndv(x1, y1, z1, x2, y2, z2) {
     /*
     calculate the euclidian distance of two particles
     @param: two array of length this.PART_MAXVAR
@@ -207,9 +225,9 @@ PartSys.prototype.findNeighbors = function (currIdx) {
         if (i != currIdx) {
             // let currNei = this.s1.slice(j, j + PART_MAXVAR);
             let currDist = eucDistIndv(
-                this.s1[currIdx * PART_MAXVAR + PART_XPOS], 
-                this.s1[currIdx * PART_MAXVAR + PART_YPOS], 
-                this.s1[currIdx * PART_MAXVAR + PART_ZPOS], 
+                this.s1[currIdx * PART_MAXVAR + PART_XPOS],
+                this.s1[currIdx * PART_MAXVAR + PART_YPOS],
+                this.s1[currIdx * PART_MAXVAR + PART_ZPOS],
                 this.s1[j + PART_XPOS],
                 this.s1[j + PART_YPOS],
                 this.s1[j + PART_ZPOS]
@@ -509,7 +527,9 @@ PartSys.prototype.applyForces = function (s, fList) {
         }
         // console.log("m:",m,"mmax:",mmax);
         // m and mmax are now correctly initialized; use them!  
-        if (fList[k].forceType == F_SEPERATION) {
+        if (fList[k].forceType == F_SEPERATION
+            || fList[k].forceType == F_ALIGN
+            || fList[k].forceType == F_COHESION) {
             this.updateNeighbors();
         }
         switch (fList[k].forceType) {
@@ -585,6 +605,7 @@ PartSys.prototype.applyForces = function (s, fList) {
             case F_SEPERATION: //collision avoidance
                 var j = m * PART_MAXVAR;  // state var array index for particle # m
                 for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
+                    this.updateNeighbors();
                     // * - fList[k].kSep / distance * xpos
                     // let curMass = s.slice(j, j + PART_MAXVAR);
                     let curNeighbors = this.neighbors[m];
@@ -594,21 +615,77 @@ PartSys.prototype.applyForces = function (s, fList) {
                             // let currNeighbor = s.slice(nIdx, nIdx + PART_MAXVAR); //retrieve true neighbor particle
                             // console.log("should be something small",nIdx);
                             let dist = eucDistIndv(
-                                s[j+PART_XPOS],s[j+PART_YPOS],s[j+PART_ZPOS],
-                                s[nIdx*PART_MAXVAR+PART_XPOS],s[nIdx*PART_MAXVAR+PART_YPOS],s[nIdx*PART_MAXVAR+PART_ZPOS]
+                                s[j + PART_XPOS], s[j + PART_YPOS], s[j + PART_ZPOS],
+                                s[nIdx * PART_MAXVAR + PART_XPOS], s[nIdx * PART_MAXVAR + PART_YPOS], s[nIdx * PART_MAXVAR + PART_ZPOS]
                             );
                             s[j + PART_X_FTOT] -= fList[k].kSep / dist
-                                * (s[nIdx*PART_MAXVAR+PART_XPOS] - s[j+PART_XPOS]);
+                                * (s[nIdx * PART_MAXVAR + PART_XPOS] - s[j + PART_XPOS]);
                             s[j + PART_Y_FTOT] -= fList[k].kSep / dist
-                                * (s[nIdx*PART_MAXVAR+PART_YPOS] - s[j+PART_YPOS]);
+                                * (s[nIdx * PART_MAXVAR + PART_YPOS] - s[j + PART_YPOS]);
                             s[j + PART_Z_FTOT] -= fList[k].kSep / dist
-                                * (s[nIdx*PART_MAXVAR+PART_ZPOS] - s[j+PART_ZPOS]);
+                                * (s[nIdx * PART_MAXVAR + PART_ZPOS] - s[j + PART_ZPOS]);
                         }
+                        // console.log(curNeighbors);
+                        // console.log(s)
                     }
-                    // console.log(s)
                 }
                 break;
-
+            case F_ALIGN:
+                var j = m * PART_MAXVAR;  // state var array index for particle # m
+                for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
+                    // * adjust i's velocity to neighbors
+                    // * kv * (vj - vi)
+                    this.updateNeighbors();
+                    let curNeighbors = this.neighbors[m];
+                    if (curNeighbors.length > 0) {
+                        for (let idx = 0; idx < curNeighbors.length; idx++) { //for each neighbor
+                            let nIdx = curNeighbors[idx]; //currentNeighbor's index in the s array
+                            s[j + PART_X_FTOT] += fList[k].kVel
+                                * (s[nIdx * PART_MAXVAR + PART_XVEL] - s[j + PART_XVEL]);
+                            s[j + PART_Y_FTOT] += fList[k].kVel
+                                * (s[nIdx * PART_MAXVAR + PART_YVEL] - s[j + PART_YVEL]);
+                            s[j + PART_Z_FTOT] += fList[k].kVel
+                                * (s[nIdx * PART_MAXVAR + PART_ZVEL] - s[j + PART_ZVEL]);
+                        }
+                        // console.log(s)
+                    }
+                }
+                break;
+            case F_COHESION: //centering
+                var j = m * PART_MAXVAR;  // state var array index for particle # m
+                for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
+                    // * pull boid i towards j
+                    // * kc * Xij
+                    this.updateNeighbors();
+                    let curNeighbors = this.neighbors[m];
+                    if (curNeighbors.length > 0) {
+                        for (let idx = 0; idx < curNeighbors.length; idx++) { //for each neighbor
+                            let nIdx = curNeighbors[idx]; //currentNeighbor's index in the s array
+                            s[j + PART_X_FTOT] += fList[k].kCen
+                                * (s[nIdx * PART_MAXVAR + PART_XPOS] - s[j + PART_XPOS]);
+                            s[j + PART_Y_FTOT] += fList[k].kCen
+                                * (s[nIdx * PART_MAXVAR + PART_YPOS] - s[j + PART_YPOS]);
+                            s[j + PART_Z_FTOT] += fList[k].kCen
+                                * (s[nIdx * PART_MAXVAR + PART_ZPOS] - s[j + PART_ZPOS]);
+                        }
+                        // console.log(this.neighbors)
+                        // console.log(s)
+                    }
+                }
+                break;
+            case F_FLY:    // Earth-gravity pulls 'downwards' as defined by downDir
+                var j = m * PART_MAXVAR;  // state var array index for particle # m
+                for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
+                    // force from gravity == mass * gravConst * downDirection
+                    s[j + PART_X_FTOT] += s[j + PART_MASS] * fList[k].kFly *
+                        fList[k].flyDir.elements[0];
+                    s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].kFly *
+                        fList[k].flyDir.elements[1];
+                    s[j + PART_Z_FTOT] += s[j + PART_MASS] * fList[k].kFly *
+                        fList[k].flyDir.elements[2];
+                }
+                // console.log(s);
+                break;
             default:
                 console.log("!!!ApplyForces() fList[", k, "] invalid forceType:", fList[k].forceType);
                 break;

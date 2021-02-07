@@ -35,7 +35,8 @@ const F_CHARGE = 9;      // attract/repel by charge and inverse distance.
 const F_SEPERATION = 10;
 const F_ALIGN = 11;
 const F_COHESION = 12;
-const F_MAXKINDS = 13;      // 'max' is always the LAST name in our list;
+const F_FLY = 13;
+const F_MAXKINDS = 14;      // 'max' is always the LAST name in our list;
 // gives the total number of choices for forces.
 
 /* NOTE THAT different forceType values (e.g. gravity vs spring) will need 
@@ -60,12 +61,17 @@ function CForcer() {
     // affected by this CForcer object. To select ALL 
     // particles from 'targFirst' on, set targCount < 0.
     // For springs, set targCount=0 & use e1,e2 below.
-    // ! F_SEPERATION  Earth Gravity variables........................................
-    this.kSep = 1.1;
+    // ! F_SEPERATION & F_ALIGN [TEXTBOOK PAGE104]........................................
+    this.kSep = 0.5; //collision avoidance seperation 
+    this.kVel = 0.5; //velocity matching alighment
+    this.kCen = 2.5; //cohesion centering, pull i towards j
+    this.kFly = 0.01; //flying direction for everyone (evasion?)
+    this.flyDir = new Vector4([0.8, 0.2, 0.3, 1]); // 'down' direction vector for gravity.
 
     // ! F_GRAV_E  Earth Gravity variables........................................
-    this.gravConst = 9.832;   // gravity's acceleration(meter/sec^2) on Earth surface, value is 9.832 meters/sec^2.
+    this.gravConst = 9.832; // gravity's acceleration(meter/sec^2) on Earth surface, value is 9.832 meters/sec^2.
     this.downDir = new Vector4([0, -1, 0, 1]); // 'down' direction vector for gravity.
+    //FIXME: some combination produce NaN...
 
     // ! F_GRAV_P  Planetary Gravity variables....................................
     // Attractive force on a pair of particles (e1,e2) with strength of
