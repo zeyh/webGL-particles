@@ -106,8 +106,124 @@ PartSys.prototype.initShader = function (vertSrc, fragSrc) {
 
 }
 
+PartSys.prototype.initBoid = function (count) {
+    console.log('🐦');
+    /* http://www.red3d.com/cwr/boids/
+     a) separation, 
+     b) cohesion, 
+     c) alignment,
+     d) evasion
+    */
+    // ! force-causing objects
+    var fTmp = new CForcer();       // create a force-causing object, and
+    // * earth gravity for all particles:
+    fTmp.forceType = F_SEPERATION;      // set it to earth gravity, and
+    fTmp.targFirst = 0;             // set it to affect ALL particles:
+    fTmp.partCount = -1;            // (negative value means ALL particles and IGNORE all other Cforcer members...)
+    this.forceList.push(fTmp);      // append this 'gravity' force object to 
+    console.log("\t\t", this.forceList.length, "CForcer objects:");
+    console.log("\t\t", this.limitList.length, "CLimit objects.");
+
+    // ! ode constants
+    this.partCount = count;
+    this.s1 = new Float32Array(this.partCount * PART_MAXVAR);
+    this.s2 = new Float32Array(this.partCount * PART_MAXVAR);
+    this.s1dot = new Float32Array(this.partCount * PART_MAXVAR);
+
+    this.INIT_VEL = 0.15 * 60.0;
+    this.runMode = 3;
+    this.solvType = g_currSolverType;
+    this.constraintType = CONS_BOUNCYBALL1; //TODO:
+    this.drag = 0.9; //friction force //used in bouncy constraint
+    this.resti = 1.0; //inelastic
+    this.neighbors = []; //index for self, ith index array content for its neighbors
+    for (let i = 0; i < this.partCount; i++) {
+        this.neighbors.push([]);
+    }
+    this.neighborRadius = 0.2;
+
+    //* initial conditions
+    var j = 0;
+    for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+        this.roundRand(); // * y(0)
+        this.s1[j + PART_XPOS] = 0.0 + 1.0 * this.neighborRadius * this.randX;
+        this.s1[j + PART_YPOS] = 0.0 + 1.0 * this.neighborRadius * this.randX;
+        this.s1[j + PART_ZPOS] = 0.0 + 1.0 * this.neighborRadius * this.randZ;
+        this.s1[j + PART_WPOS] = 1.0;
+        this.s1[j + PART_R] = 0.1;
+        this.s1[j + PART_G] = 0.5;
+        this.s1[j + PART_B] = 0.5 + Math.abs(this.randZ);
+        this.roundRand(); // * y'(0)
+        this.s1[j + PART_XVEL] = this.INIT_VEL * (0.1 + 0.1 * this.randX);
+        this.s1[j + PART_YVEL] = this.INIT_VEL * (0.0 + 0.03 * this.randY);
+        this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.1 + 0.1 * this.randZ);
+        this.s1[j + PART_DIAM] = 3; // on-screen diameter, in pixels
+        this.s1[j + PART_MASS] = 1.0;
+        this.s1[j + PART_RENDMODE] = 0.0;
+        this.s1[j + PART_AGE] = 10 + 100 * Math.random();
+        this.s2.set(this.s1);
+    }
+    this.updateNeighbors();
+    this.FSIZE = this.s1.BYTES_PER_ELEMENT;
+}
+
+function calEucDist(m1, m2) {
+    /*
+    calculate the euclidian distance of two particles
+    @param: two array of length this.PART_MAXVAR
+    @return: a float of the distance between the two particles
+    */
+    return Math.sqrt(Math.pow(m1[PART_XPOS] - m2[PART_XPOS], 2)
+        + Math.pow(m1[PART_YPOS] - m2[PART_YPOS], 2)
+        + Math.pow(m1[PART_ZPOS] - m2[PART_ZPOS], 2));
+}
+
+function eucDistIndv(x1,y1,z1, x2,y2,z2) {
+    /*
+    calculate the euclidian distance of two particles
+    @param: two array of length this.PART_MAXVAR
+    @return: a float of the distance between the two particles
+    */
+    return Math.sqrt(Math.pow(x1 - x2, 2)
+        + Math.pow(y1 - y2, 2)
+        + Math.pow(z1 - z2, 2));
+}
+
+PartSys.prototype.updateNeighbors = function () {
+    for (let i = 0; i < this.partCount; i++) {
+        this.neighbors[i] = this.findNeighbors(i);
+    }
+}
+PartSys.prototype.findNeighbors = function (currIdx) {
+    /* 
+    find all neighbors within the radius for given index's corresponding mass
+    @param: current bird's index [0, this.partCount-1]
+    @return: an array of current bird's neighbors' index
+    */
+    // let self = this.s1.slice(currIdx * PART_MAXVAR, currIdx * PART_MAXVAR + PART_MAXVAR);
+    var j = 0;
+    let neighbors = [];
+    for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+        if (i != currIdx) {
+            // let currNei = this.s1.slice(j, j + PART_MAXVAR);
+            let currDist = eucDistIndv(
+                this.s1[currIdx * PART_MAXVAR + PART_XPOS], 
+                this.s1[currIdx * PART_MAXVAR + PART_YPOS], 
+                this.s1[currIdx * PART_MAXVAR + PART_ZPOS], 
+                this.s1[j + PART_XPOS],
+                this.s1[j + PART_YPOS],
+                this.s1[j + PART_ZPOS]
+            );
+            if (currDist < this.neighborRadius) {
+                neighbors.push(i);
+            }
+        }
+    }
+    return neighbors;
+}
+
 PartSys.prototype.initFire = function (count) {
-    console.log('🔥');
+    // console.log('🔥');
     // ! force-causing objects
     var fTmp = new CForcer();       // create a force-causing object, and
     // * earth gravity for all particles:
@@ -115,8 +231,6 @@ PartSys.prototype.initFire = function (count) {
     fTmp.targFirst = 0;             // set it to affect ALL particles:
     fTmp.partCount = -1;            // (negative value means ALL particles and IGNORE all other Cforcer members...)
     this.forceList.push(fTmp);      // append this 'gravity' force object to 
-    console.log("\t\t", this.forceList.length, "CForcer objects:");
-
     // ! Create & init all constraint-causing objects
     var cTmp = new CLimit();        // creat constraint-causing object, and
     cTmp.hitType = HIT_BOUNCE_VEL;  // set how particles 'bounce' from its surface,
@@ -130,8 +244,10 @@ PartSys.prototype.initFire = function (count) {
     cTmp.Kresti = 1.0;              // bouncyness: coeff. of restitution.
     // (and IGNORE all other CLimit members...)
     this.limitList.push(cTmp);      // append this 'box' constraint object to the
-    // 'limitList' array of constraint-causing objects.                                
-    console.log("\t\t", this.forceList.length, "CLimit objects.");
+    // 'limitList' array of constraint-causing objects.     
+
+    // console.log("\t\t", this.forceList.length, "CForcer objects:");                           
+    // console.log("\t\t", this.limitList.length, "CLimit objects.");
 
     // ! ode constants
     this.partCount = count;
@@ -145,7 +261,6 @@ PartSys.prototype.initFire = function (count) {
     this.constraintType = CONS_FIRE; //TODO:
     this.drag = 0.9; //friction force //used in bouncy constraint
     this.resti = 1.0; //inelastic
-
     //* initial conditions
     var j = 0;
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
@@ -394,6 +509,9 @@ PartSys.prototype.applyForces = function (s, fList) {
         }
         // console.log("m:",m,"mmax:",mmax);
         // m and mmax are now correctly initialized; use them!  
+        if (fList[k].forceType == F_SEPERATION) {
+            this.updateNeighbors();
+        }
         switch (fList[k].forceType) {
             case F_MOUSE:     // Spring-like connection to mouse cursor
                 console.log("PartSys.applyForces(), fList[", k, "].forceType:",
@@ -434,11 +552,6 @@ PartSys.prototype.applyForces = function (s, fList) {
                 }
                 break;
             case F_SPRING:
-                // fTmp.e1 = 0;              
-                // fTmp.e2 = 1;             
-                // fTmp.K_spring = 100.0;             
-                // fTmp.K_springDamp = 0.8;          
-                // fTmp.K_restLength = 0.3;      
                 // 𝑚𝑥¨1=−𝑘(𝑥1−𝑥2+𝑙) https://physics.stackexchange.com/questions/61809/two-masses-attached-to-a-spring
                 // 𝑚𝑥¨2=−𝑘(𝑥2−𝑥1−𝑙)
                 //get mass 1 and mass 2
@@ -459,7 +572,6 @@ PartSys.prototype.applyForces = function (s, fList) {
                     s[j + PART_Z_FTOT] += (m2[PART_ZPOS] - m1[PART_ZPOS]) / eucDist * fList[k].K_spring
                         * (eucDist - fList[k].K_restLength) / s[j + PART_MASS]
                         * (1 - 2 * m);
-
                 }
                 break;
             case F_SPRINGSET:
@@ -470,6 +582,33 @@ PartSys.prototype.applyForces = function (s, fList) {
                 console.log("PartSys.applyForces(), fList[", k, "].forceType:",
                     fList[k].forceType, "NOT YET IMPLEMENTED!!");
                 break;
+            case F_SEPERATION: //collision avoidance
+                var j = m * PART_MAXVAR;  // state var array index for particle # m
+                for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
+                    // * - fList[k].kSep / distance * xpos
+                    // let curMass = s.slice(j, j + PART_MAXVAR);
+                    let curNeighbors = this.neighbors[m];
+                    if (curNeighbors.length > 0) {
+                        for (let idx = 0; idx < curNeighbors.length; idx++) { //for each neighbor
+                            let nIdx = curNeighbors[idx]; //currentNeighbor's index in the s array
+                            // let currNeighbor = s.slice(nIdx, nIdx + PART_MAXVAR); //retrieve true neighbor particle
+                            // console.log("should be something small",nIdx);
+                            let dist = eucDistIndv(
+                                s[j+PART_XPOS],s[j+PART_YPOS],s[j+PART_ZPOS],
+                                s[nIdx*PART_MAXVAR+PART_XPOS],s[nIdx*PART_MAXVAR+PART_YPOS],s[nIdx*PART_MAXVAR+PART_ZPOS]
+                            );
+                            s[j + PART_X_FTOT] -= fList[k].kSep / dist
+                                * (s[nIdx*PART_MAXVAR+PART_XPOS] - s[j+PART_XPOS]);
+                            s[j + PART_Y_FTOT] -= fList[k].kSep / dist
+                                * (s[nIdx*PART_MAXVAR+PART_YPOS] - s[j+PART_YPOS]);
+                            s[j + PART_Z_FTOT] -= fList[k].kSep / dist
+                                * (s[nIdx*PART_MAXVAR+PART_ZPOS] - s[j+PART_ZPOS]);
+                        }
+                    }
+                    // console.log(s)
+                }
+                break;
+
             default:
                 console.log("!!!ApplyForces() fList[", k, "] invalid forceType:", fList[k].forceType);
                 break;
@@ -756,12 +895,12 @@ PartSys.prototype.doConstraints = function () {
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
                 this.s2[j + PART_AGE] -= 1;     // decrement lifetime.
                 if (this.s2[j + PART_AGE] <= 0) { // End of life: RESET this particle!
-                    this.roundRand();     
+                    this.roundRand();
                     this.s2[j + PART_XPOS] = -0.0 + 0.1 * this.randX;
                     this.s2[j + PART_YPOS] = -1.0;
                     this.s2[j + PART_ZPOS] = -0.0 + 0.1 * this.randZ;
-                    this.s2[j + PART_WPOS] = 1.0;      
-                    this.roundRand(); 
+                    this.s2[j + PART_WPOS] = 1.0;
+                    this.roundRand();
                     this.s2[j + PART_XVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randX);
                     this.s2[j + PART_YVEL] = this.INIT_VEL * (0.3 + 0.3 * this.randY);
                     this.s2[j + PART_ZVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randZ);
@@ -770,7 +909,7 @@ PartSys.prototype.doConstraints = function () {
                     this.s2[j + PART_RENDMODE] = 0.0;
                     this.s2[j + PART_AGE] = 10 + 100 * Math.random();
                 } // if age <=0
-            } 
+            }
         case CONS_BOUNCYBALL0:
             var j = 0;  // i==particle number; j==array index for i-th particle
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
@@ -932,6 +1071,10 @@ PartSys.prototype.swap = function () {
     */
 
     this.s1.set(this.s2);
+}
+
+PartSys.prototype.perlinNoise = function () {
+    //https://github.com/josephg/noisejs
 }
 
 PartSys.prototype.roundRand = function () {

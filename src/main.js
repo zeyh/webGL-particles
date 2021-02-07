@@ -20,13 +20,13 @@ References: besides the inline links in index.html, the code is modified from
     Done: explicit solvers*3 basic spring mass pair
     Done: 3D Explicit & implicit solvers*5
     * Almost: onscreen instructions
-
+    * Almost[0.5d]: fire🔥 with noise/transparency/texture
+    
+    ? Doing[2d]: g_partA: boids with a) separation, b) cohesion, c) alignment, and d) evasion
     ? Doing[2d]: mass-spring like linked systems with interactions (cloth-like)
-    ? Doing[1.5d]: fire🔥
 
     Todo[1d]: limit particle in shapes[box, sphere, cylinder]
     Todo[2d]: tornados within cylinder [300+]
-    Todo[2d]: g_partA: boids with a) separation, b) cohesion, c) alignment, and d) evasion
     Todo[2d]: fluids
     Todo[1d]: textures 
     Todo[1d+]: cohesive
@@ -56,7 +56,7 @@ var g_timeStep = 1000.0 / 60.0;			// current timestep in milliseconds (init to 1
 var g_timeStepMin = g_timeStep;   //holds min,max timestep values since last keypress.
 var g_timeStepMax = g_timeStep;
 
-var g_particleNum = 2;
+var g_particleNum = 5;
 var g_particleArray = [];
 
 function initVBOs(currScheme) {
@@ -93,6 +93,13 @@ function initVBOs(currScheme) {
     particle3.initFire(600); //need to be 2
     particle3.initShader(particleVert, particleFrag);
     g_particleArray[FIRE] = particle3;
+
+    globalThis.BOID = 4;
+    var particle4 = new PartSys();
+    particle4.initBoid(40); //need to be 2
+    particle4.initShader(particleVert, particleFrag_square);
+    g_particleArray[BOID] = particle4;
+
 
     g_vboArray = [grid, plane, sphere_test, sphere];
 }

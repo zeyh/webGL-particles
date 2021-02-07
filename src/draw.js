@@ -30,12 +30,19 @@ function drawAll([grid, plane, sphere_test, sphere]) {
     // g_modelMatrix = popMatrix();
     // pushMatrix(g_modelMatrix);
 
-    // particle SPRINGMASS
+    // // particle SPRINGMASS
     // pushMatrix(g_modelMatrix);
     // g_modelMatrix.setTranslate(-1, -0.5, 1);
     // drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
     // g_modelMatrix = popMatrix();
     // pushMatrix(g_modelMatrix);
+
+    // particle flying boids
+    pushMatrix(g_modelMatrix);
+    g_modelMatrix.setTranslate(0, 2.5, 1);
+    drawParticle(BOID, g_modelMatrix, g_viewProjMatrix);
+    g_modelMatrix = popMatrix();
+    pushMatrix(g_modelMatrix);
 
     // particle FIRE
     pushMatrix(g_modelMatrix);
