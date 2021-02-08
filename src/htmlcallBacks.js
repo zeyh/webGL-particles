@@ -17,6 +17,8 @@ var g_speed = 1;
 
 var g_schemeOpt = 0;
 //TODO: 👇 encode the object's attribute
+var g_curMousePosX4Boid;
+var g_curMousePosY4Boid
 var g_curRunMode = 3;	// particle system state: 0=reset; 1= pause; 2=step; 3=run
 var g_solverScheme = 1;
 
@@ -658,7 +660,7 @@ var g_mousePosY_curr;
     var mousePos;
     document.onmousemove = handleMouseMove;
     setInterval(getMousePosition, 100); // setInterval repeats every X ms
-
+    setInterval(getMousePosition4Boid, 100); 
     function handleMouseMove(event) {
         var dot, eventDoc, doc, body, pageX, pageY;
         event = event || window.event; // IE-ism
@@ -682,6 +684,14 @@ var g_mousePosY_curr;
             y: event.pageY
         };
     }
+    function getMousePosition4Boid() {
+        var pos = mousePos;
+        if(pos){
+            g_curMousePosX4Boid = pos.x;
+            g_curMousePosY4Boid = pos.y;
+        }
+    }
+
     function getMousePosition() {
         var pos = mousePos;
         if (pos && g_isCameraFixed) {

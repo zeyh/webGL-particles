@@ -689,16 +689,31 @@ PartSys.prototype.applyForces = function (s, fList) {
                 var j = m * PART_MAXVAR;  // state var array index for particle # m
                 let VEL_THRESHOLD = 0.5;
                 for (; m < mmax; m++, j += PART_MAXVAR) {
-                    let randomSeed = Math.random();
-                    let sign = randomSeed < 0.5 ? -1 : 1;
-                    // force from gravity == mass * gravConst * downDirection
-                    if (eucDistIndv(s[j + PART_XVEL], s[j + PART_YVEL], s[j + PART_ZVEL], 0, 0, 0) < VEL_THRESHOLD) {
-                        // console.log(sign * s[j + PART_MASS] * fList[k].kFly)
-                        // console.log(s[j + PART_XVEL], s[j + PART_YVEL], s[j + PART_ZVEL]);
-                        s[j + PART_X_FTOT] += sign * s[j + PART_MASS] * fList[k].kFly;
-                        s[j + PART_Y_FTOT] += sign * s[j + PART_MASS] * fList[k].kFly;
-                        s[j + PART_Z_FTOT] += sign * s[j + PART_MASS] * fList[k].kFly;
+                    // * for centroid of boids follow mouse FIXME: minus the centroid...
+                    if(g_curMousePosX4Boid && g_curMousePosY4Boid){
+                        let dx = (g_curMousePosX4Boid - canvas.width/2)/canvas.width/2;
+                        let dy = (g_curMousePosY4Boid - canvas.height/2)/canvas.height/2;
+                        // console.log(dx, dy);
+                        var j = m * PART_MAXVAR;  // state var array index for particle # m
+                        for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
+                            // force from gravity == mass * gravConst * downDirection
+                            s[j + PART_X_FTOT] += (fList[k].kFly) * dx;
+                            s[j + PART_Y_FTOT] += (fList[k].kFly) * dy;
+                            s[j + PART_Z_FTOT] += (fList[k].kFly) * dy;
+                        }
                     }
+                    // * for particles that's not moving(VEL_THRESHOLD)... let it move randomly
+                    // let randomSeed = Math.random();
+                    // let sign = randomSeed < 0.5 ? -1 : 1;
+                    // // force from gravity == mass * gravConst * downDirection
+                    // if (eucDistIndv(s[j + PART_XVEL], s[j + PART_YVEL], s[j + PART_ZVEL], 0, 0, 0) < VEL_THRESHOLD) {
+                    //     // console.log(sign * s[j + PART_MASS] * fList[k].kFly)
+                    //     // console.log(s[j + PART_XVEL], s[j + PART_YVEL], s[j + PART_ZVEL]);
+                    //     s[j + PART_X_FTOT] += sign * s[j + PART_MASS] * fList[k].kFly;
+                    //     s[j + PART_Y_FTOT] += sign * s[j + PART_MASS] * fList[k].kFly;
+                    //     s[j + PART_Z_FTOT] += sign * s[j + PART_MASS] * fList[k].kFly;
+                    // }
+                    // * for all particles move randomly
                     // s[j + PART_X_FTOT] += Math.random() * s[j + PART_MASS] * fList[k].kFly *
                     //     fList[k].flyDir.elements[0];
                     // s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].kFly *

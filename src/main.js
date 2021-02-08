@@ -95,7 +95,7 @@ function initVBOs(currScheme) {
 
     globalThis.BOID = 4;
     var particle4 = new PartSys();
-    particle4.initBoid(60); //need to be 2
+    particle4.initBoid(20); //need to be 2
     particle4.initShader(particleVert, particleFrag_square);
     g_particleArray[BOID] = particle4;
 
