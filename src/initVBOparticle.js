@@ -139,6 +139,18 @@ PartSys.prototype.initBoid = function (count) {
     fTmp.partCount = -1;
     this.forceList.push(fTmp);
 
+    // ! Create & init all constraint-causing objects
+    var cTmp = new CLimit();        // creat constraint-causing object, and
+    cTmp.hitType = HIT_BOUNCE_VEL;  // set how particles 'bounce' from its surface,
+    cTmp.limitType = LIM_ANCHOR;       // confine particles inside axis-aligned 
+    cTmp.partFirst = 0;             // applies to ALL particles; starting at 0 
+    cTmp.partCount = -1;            // through all the rest of them.
+    cTmp.xMin = -500.0; cTmp.xMax = 500.0;  // box extent:  +/- 1.0 box at origin
+    cTmp.yMin = -2.0; cTmp.yMax = 2.0;
+    cTmp.zMin = -50.0; cTmp.zMax = 50.0;
+    cTmp.Kresti = 1.0;              // bouncyness: coeff. of restitution.
+    this.limitList.push(cTmp);      // append this 'box' constraint object to the
+
     console.log("\t\t", this.forceList.length, "CForcer objects:");
     console.log("\t\t", this.limitList.length, "CLimit objects.");
 
@@ -151,14 +163,14 @@ PartSys.prototype.initBoid = function (count) {
     this.INIT_VEL = 0.15 * 60.0;
     this.runMode = 3;
     this.solvType = g_currSolverType;
-    this.constraintType = CONS_BOUNCYBALL1; //TODO:
+    this.constraintType = LIM_ANCHOR; //TODO:
     this.drag = 0.9; //friction force //used in bouncy constraint
     this.resti = 1.0; //inelastic
     this.neighbors = []; //index for self, ith index array content for its neighbors
     for (let i = 0; i < this.partCount; i++) {
         this.neighbors.push([]);
     }
-    this.neighborRadius = 0.15;
+    this.neighborRadius = params.NeighborSize;
 
     //* initial conditions
     var j = 0;
@@ -675,14 +687,24 @@ PartSys.prototype.applyForces = function (s, fList) {
                 break;
             case F_FLY:    // Earth-gravity pulls 'downwards' as defined by downDir
                 var j = m * PART_MAXVAR;  // state var array index for particle # m
-                for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
+                let VEL_THRESHOLD = 0.5;
+                for (; m < mmax; m++, j += PART_MAXVAR) {
+                    let randomSeed = Math.random();
+                    let sign = randomSeed < 0.5 ? -1 : 1;
                     // force from gravity == mass * gravConst * downDirection
-                    s[j + PART_X_FTOT] += s[j + PART_MASS] * fList[k].kFly *
-                        fList[k].flyDir.elements[0];
-                    s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].kFly *
-                        fList[k].flyDir.elements[1];
-                    s[j + PART_Z_FTOT] += s[j + PART_MASS] * fList[k].kFly *
-                        fList[k].flyDir.elements[2];
+                    if (eucDistIndv(s[j + PART_XVEL], s[j + PART_YVEL], s[j + PART_ZVEL], 0, 0, 0) < VEL_THRESHOLD) {
+                        // console.log(sign * s[j + PART_MASS] * fList[k].kFly)
+                        // console.log(s[j + PART_XVEL], s[j + PART_YVEL], s[j + PART_ZVEL]);
+                        s[j + PART_X_FTOT] += sign * s[j + PART_MASS] * fList[k].kFly;
+                        s[j + PART_Y_FTOT] += sign * s[j + PART_MASS] * fList[k].kFly;
+                        s[j + PART_Z_FTOT] += sign * s[j + PART_MASS] * fList[k].kFly;
+                    }
+                    // s[j + PART_X_FTOT] += Math.random() * s[j + PART_MASS] * fList[k].kFly *
+                    //     fList[k].flyDir.elements[0];
+                    // s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].kFly *
+                    //     fList[k].flyDir.elements[1];
+                    // s[j + PART_Z_FTOT] += s[j + PART_MASS] * fList[k].kFly *
+                    //     fList[k].flyDir.elements[2];
                 }
                 // console.log(s);
                 break;
@@ -960,13 +982,48 @@ PartSys.prototype.eulerMethod = function (s2, s1, s1dot, h) {
     return s2;
 }
 
+function findCentroid(s) {
+    /*
+    @param: a long list of state variables
+    @return the xyz position of its centroid
+    */
+    var j = 0;
+    let centroid = new Float32Array(3);
+    let partCount = s.length / PART_MAXVAR;
+    for (var i = 0; i < partCount; i += 1, j += PART_MAXVAR) {
+        centroid[0] += s[j + PART_XPOS];
+        centroid[1] += s[j + PART_YPOS];
+        centroid[2] += s[j + PART_ZPOS];
+    }
+    return [centroid[0] / partCount, centroid[1] / partCount, centroid[2] / partCount];
+}
 PartSys.prototype.doConstraints = function () {
     /*
     accepts state variables s1 and s2 
     an array of constraint-applying objects.  
     This function applies constraints to all changes between s1 and s2, and modifies s2 so that the result meets all the constraints.  
     */
+    let BOID_RAD = params.Boundary;
+    let BOID_BOUNCE = 1.0;
+    let BOUNCE_STEP = 0.001;
     switch (this.constraintType) {
+        case LIM_ANCHOR: // Keep specified particle(s) at world-space location
+            var j = 0;
+            // let centroid = findCentroid(this.s2);
+            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                if (eucDistIndv(0, 0, 0,
+                    this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]
+                ) >= BOID_RAD)  {
+                    // console.log(this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]);
+                    this.s2[j + PART_XPOS] += (this.s2[j + PART_XPOS] < 0) ? 1 : -1 * BOUNCE_STEP; //FIXME: map to the surface of the sphere
+                    this.s2[j + PART_YPOS] += (this.s2[j + PART_YPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
+                    this.s2[j + PART_ZPOS] += (this.s2[j + PART_ZPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
+                    this.s2[j + PART_XVEL] *= -BOID_BOUNCE;
+                    this.s2[j + PART_YVEL] *= -BOID_BOUNCE;
+                    this.s2[j + PART_ZVEL] *= -BOID_BOUNCE;
+                }
+            }
+            break;
         case CONS_FIRE:
             var j = 0;  // i==particle number; j==array index for i-th particle
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {

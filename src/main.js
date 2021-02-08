@@ -20,9 +20,9 @@ References: besides the inline links in index.html, the code is modified from
     Done: explicit solvers*3 basic spring mass pair
     Done: 3D Explicit & implicit solvers*5
     * Almost: onscreen instructions
+    * Almost: boid constraint+control+debug
     * Almost[0.5d]: fire🔥 with noise/transparency/texture
     
-    ? Doing[2d]: g_partA: boids with a) separation, b) cohesion, c) alignment, and d) evasion
     ? Doing[2d]: mass-spring like linked systems with interactions (cloth-like)
 
     Todo[1d]: limit particle in shapes[box, sphere, cylinder]
@@ -35,11 +35,10 @@ References: besides the inline links in index.html, the code is modified from
         console.log(JSON.parse(JSON.stringify(g_particleArray[index].s1)));
 
     🐞 FIXME: 
-
-    ! need testing/clearify: 
-        run together at ‘interactive’ rates (~3 frames/second (FPS))?
-        other constraint type ? novel rendering methods ?
-
+    ! need testing: 
+        4 forces with boid - static state??? with boundary
+        position update when boid hit the sphere-wall & shrinking from large boundary to small radius
+        isEvasion intepreted right? http://www.red3d.com/cwr/boids/
 
 */
 
@@ -96,7 +95,7 @@ function initVBOs(currScheme) {
 
     globalThis.BOID = 4;
     var particle4 = new PartSys();
-    particle4.initBoid(40); //need to be 2
+    particle4.initBoid(60); //need to be 2
     particle4.initShader(particleVert, particleFrag_square);
     g_particleArray[BOID] = particle4;
 
@@ -126,7 +125,7 @@ function main() {
         keyArrowRotateUp(ev);
         materialKeyPress(ev);
     };
-
+    setControlPanel();
     // Set the clear color and enable the depth test
     gl.clearColor(0.15, 0.15, 0.15, 1.0);
     // gl.clearColor(0.0, 0.0, 0.0, 0.0);

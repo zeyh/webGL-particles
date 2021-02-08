@@ -195,12 +195,12 @@ function hexToRgb(hex) { //https://stackoverflow.com/questions/5623838/rgb-to-he
 
 // ! ===================================for dat-gui setup
 var params = {
-    left: -1.00,
-    right: 1.00,
-    top: -1.00,
-    bottom: 1.00,
-    near: 1.00,
-    far: 100.00,
+    Boundary: 2, //in constraint BOID_RAD
+    NeighborSize: 0.15, //findNeighbor() this.neighborRadius 
+    Seperation: 1.5, //CForcer kSep
+    Alignment: 0.5, //kVel
+    Cohesion: 2.5, //kCen
+    Evasion: 0.1, //kFly
 };
 var params_fly = {
     turning_angle: 0.00,
@@ -212,31 +212,60 @@ var isFrustrum = false;
 var isFly = false;
 view.use_frustum = false;
 view.fly = false;
-var guileft, guiright, guitop, guibottom, guinear, guifar;
+var guiBoundary, guiNeighbor, guiSep, guiAli, guiCoh, guiEva;
 var guiArr_frustum, guiArr_fly;
 var gui;
 function setControlPanel() {
     if (g_schemeOpt == 0) {
         gui = new dat.GUI();
         //frustrum controller
-        var frustrumController = gui.add(view, 'use_frustum').listen();
-        guileft = gui.add(params, 'left', -2.00, 0.00);
-        guiright = gui.add(params, 'right', 0.00, 2.00);
-        guitop = gui.add(params, 'top', -2.00, 0.00);
-        guibottom = gui.add(params, 'bottom', 0.00, 2.00);
-        guinear = gui.add(params, 'near', 0.10, 4.00);
-        guifar = gui.add(params, 'far', 5, 150);
-        guiArr_frustum = [guileft, guiright, guitop, guibottom, guinear, guifar];
-        disableGui(guiArr_frustum); //by default
-        frustrumController.onChange(function (value) {
-            isFrustrum = value
-            if (!isFrustrum) {
-                disableGui(guiArr_frustum);
+        // var frustrumController = gui.add(view, 'use_frustum').listen();
+        guiBoundary = gui.add(params, 'Boundary', 1.00, 10.00);
+        guiNeighbor = gui.add(params, 'NeighborSize', 0.05, 5.00).onChange(
+            function(value){ //update findNeighbor criteria
+                g_particleArray[BOID].neighborRadius = value;
+                g_particleArray[BOID].updateNeighbors();
             }
-            else {
-                enableGui(guiArr_frustum);
+        );
+        guiSep = gui.add(params, 'Seperation', 0.00, 3.00).onChange(
+            function(value){ //update findNeighbor criteria
+                for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
+                    g_particleArray[BOID].forceList[i].kSep = value;
+                }
             }
-        });
+        );
+        guiAli = gui.add(params, 'Alignment', 0.00, 3.00).onChange(
+            function(value){ //update findNeighbor criteria
+                for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
+                    g_particleArray[BOID].forceList[i].kVel = value;
+                }
+            }
+        );
+        guiCoh = gui.add(params, 'Cohesion', 0.00, 3.00).onChange(
+            function(value){ //update findNeighbor criteria
+                for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
+                    g_particleArray[BOID].forceList[i].kCen = value;
+                }
+            }
+        );
+        guiEva = gui.add(params, 'Evasion', 0.00, 3.00).onChange(
+            function(value){ //update findNeighbor criteria
+                for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
+                    g_particleArray[BOID].forceList[i].kFly = value;
+                }
+            }
+        );
+        guiArr_frustum = [guiBoundary, guiNeighbor, guiSep, guiAli, guiCoh, guiEva];
+        // disableGui(guiArr_frustum); //by default
+        // frustrumController.onChange(function (value) {
+        //     isFrustrum = value
+        //     if (!isFrustrum) {
+        //         disableGui(guiArr_frustum);
+        //     }
+        //     else {
+        //         enableGui(guiArr_frustum);
+        //     }
+        // });
     }
     else {
         if (gui) {
