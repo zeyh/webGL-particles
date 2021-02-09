@@ -101,7 +101,7 @@ function initVBOs(currScheme) {
 
     globalThis.CLOTH = 5;
     var particle5 = new PartSys();
-    particle5.initCloth(4,4,0.1);  //width, height, spacing
+    particle5.initCloth(10,5,0.05);  //width, height, spacing
     particle5.initShader(particleVert, particleFrag_square);
     g_particleArray[CLOTH] = particle5;
 

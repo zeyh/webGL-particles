@@ -81,7 +81,7 @@ function CForcer() {
     // avoids near-infinite forces when planets collide.
 
     // ! F_DRAG Viscous Drag Variables............................................
-    this.K_drag = 0.15;       // force = -velocity*K_drag.
+    this.K_drag = 0.2;       // force = -velocity*K_drag.
     // (in Euler solver, which assumes constant force
     // during each timestep, drag of 0.15 multiplies
     // s1 velocity by (1-0.15)==0.85)
@@ -100,6 +100,13 @@ function CForcer() {
     // how fast the spring length is changing, and
     // applied along the direction of the spring.
     this.K_restLength;         // the zero-force length of this spring.
+
+    // ! F_SPRINGSET cloth variables;........................................
+    this.kStretch = 0.1;
+    this.kSheer = 0.1;
+    this.kBend = 0.02;
+    this.springEqualibrium = 0.02;
+
 }
 
 CForcer.prototype.printMe = function (opt_src) {

@@ -119,26 +119,26 @@ PartSys.prototype.findClothProps = function () {
         this.nStretching.push([]);
         this.nSheering.push([]);
         this.nBending.push([]); //3d array [[[center1,neighbor1],[center2,neighbor2],...], ...  ]
-    } 
+    }
     for (let i = 0; i < this.partCount; i++) { //generate a graph matrix for each prop with bidirectional edges
         //* for manhattan-distance 田 like [Stretching mass spring pair]
         if (i % this.clothWidth == this.clothWidth - 1 && i + this.clothWidth < this.partCount) {
             // this.nStretching.push([i, i + this.clothWidth]); // last column down...|
             this.nStretching[i].push(i + this.clothWidth);
-            this.nStretching[i + this.clothWidth].push(i);
+            // this.nStretching[i + this.clothWidth].push(i);
         }
         else if (i + this.clothWidth < this.partCount) {
             // this.nStretching.push([i, i + 1]); // left down -
             // this.nStretching.push([i, i + this.clothWidth]); // |
             this.nStretching[i].push(i + 1);
-            this.nStretching[i + 1].push(i);
+            // this.nStretching[i + 1].push(i);
             this.nStretching[i].push(i + this.clothWidth);
-            this.nStretching[i + this.clothWidth].push(i);
+            // this.nStretching[i + this.clothWidth].push(i);
         }
         else if (Math.floor(i / this.clothWidth) == this.clothHeight - 1 && i % this.clothWidth != this.clothWidth - 1) {
             // this.nStretching.push([i, i + 1]); // last row left _
-            this.nStretching[i].push(i+1);
-            this.nStretching[i+1].push(i);
+            this.nStretching[i].push(i + 1);
+            // this.nStretching[i + 1].push(i);
         }
 
         //* for X-like [Shearing mass spring pair]
@@ -156,23 +156,23 @@ PartSys.prototype.findClothProps = function () {
         //* for bending - angle change w.r.t. a center particle 田 [left, center, right]
         if (i % this.clothWidth < this.clothWidth - 2) {
             // this.nBending.push([i, i+1, i+2]); //not last two column --
-            this.nBending[i].push([i+1, i+2]);
-            this.nBending[i+2].push([i+1, i]);
+            this.nBending[i].push([i + 1, i + 2]);
+            this.nBending[i + 2].push([i + 1, i]);
         }
         if (Math.floor(i / this.clothWidth) < this.clothHeight - 2) {
             // this.nBending.push([i, i + this.clothWidth, i + this.clothWidth * 2]); //not last two row |
             this.nBending[i].push([i + this.clothWidth, i + this.clothWidth * 2]);
             this.nBending[i + this.clothWidth * 2].push([i + this.clothWidth, i]);
         }
-        if(i % this.clothWidth < this.clothWidth - 2 && Math.floor(i / this.clothWidth) < this.clothHeight - 2){
+        if (i % this.clothWidth < this.clothWidth - 2 && Math.floor(i / this.clothWidth) < this.clothHeight - 2) {
             // this.nBending.push([i, i+this.clothWidth+1, i+(this.clothWidth+1)*2]); //not last two column & row \
-            this.nBending[i].push([i+this.clothWidth+1, i+(this.clothWidth+1)*2]);
-            this.nBending[i+(this.clothWidth+1)*2].push([i+this.clothWidth+1, i]);
+            this.nBending[i].push([i + this.clothWidth + 1, i + (this.clothWidth + 1) * 2]);
+            this.nBending[i + (this.clothWidth + 1) * 2].push([i + this.clothWidth + 1, i]);
         }
-        if(i % this.clothWidth > 1 && Math.floor(i / this.clothWidth) < this.clothHeight - 2){
+        if (i % this.clothWidth > 1 && Math.floor(i / this.clothWidth) < this.clothHeight - 2) {
             // this.nBending.push([i, i+this.clothWidth-1, i+(this.clothWidth-1)*2]); //not first two column & last two row /
-            this.nBending[i].push([i+this.clothWidth-1, i+(this.clothWidth-1)*2]);
-            this.nBending[i+(this.clothWidth-1)*2].push([i+this.clothWidth-1, i]);
+            this.nBending[i].push([i + this.clothWidth - 1, i + (this.clothWidth - 1) * 2]);
+            this.nBending[i + (this.clothWidth - 1) * 2].push([i + this.clothWidth - 1, i]);
         }
     }
 }
@@ -192,6 +192,13 @@ PartSys.prototype.initCloth = function (width, height, spacing) {
     fTmp.targFirst = 0;
     fTmp.partCount = -1;
     this.forceList.push(fTmp);
+
+    fTmp = new CForcer();
+    fTmp.forceType = F_DRAG;
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
     console.log("\t\t", this.forceList.length, "CForcer objects:");
     console.log("\t\t", this.limitList.length, "CLimit objects.");
 
@@ -205,7 +212,7 @@ PartSys.prototype.initCloth = function (width, height, spacing) {
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR);
 
     this.INIT_VEL = 0.15 * 60.0;
-    this.drag = 0.985; //friction force
+    this.drag = 0.285; //friction force
     this.grav = 9.832; //gravity constant
     this.resti = 1.0; //inelastic
     this.runMode = 3;
@@ -225,7 +232,7 @@ PartSys.prototype.initCloth = function (width, height, spacing) {
         this.s1[j + PART_XVEL] = 0.0;
         this.s1[j + PART_YVEL] = 0.0;
         this.s1[j + PART_ZVEL] = 0.0;
-        this.s1[j + PART_DIAM] = 10;
+        this.s1[j + PART_DIAM] = 5;
         this.s1[j + PART_MASS] = this.s1[j + PART_DIAM] / 100;
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 10;
@@ -640,6 +647,33 @@ PartSys.prototype.render = function (g_modelMatrix, g_viewProjMatrix) { //finall
     gl.drawArrays(gl.POINTS, 0, this.partCount);
 }
 
+PartSys.prototype.applySpringForce = function (s, forceList, springConst, currIdx, neighborIdx, centerIdx) {
+    /*
+    @param: overall particles, forceConstants, the index of currentMass, idx of its connected mass
+    @return: no return, but will change the  PART_X_FTOT,PART_Y_FTOT,PART_Z_FTOT of currentMass
+    𝑚𝑥¨1=−𝑘(𝑥1−𝑥2+𝑙) https://physics.stackexchange.com/questions/61809/two-masses-attached-to-a-spring
+    𝑚𝑥¨2=−𝑘(𝑥2−𝑥1−𝑙)
+    Note: -1*(1-2*m) map {0,1} to {-1,1} indicating the sign
+    */
+    let eucDist = eucDistIndv(
+        s[currIdx * PART_MAXVAR + PART_XPOS], s[currIdx * PART_MAXVAR + PART_YPOS], s[currIdx * PART_MAXVAR + PART_ZPOS],
+        s[neighborIdx * PART_MAXVAR + PART_XPOS], s[neighborIdx * PART_MAXVAR + PART_YPOS], s[neighborIdx * PART_MAXVAR + PART_ZPOS]
+    );
+    s[currIdx * PART_MAXVAR + PART_X_FTOT] += springConst * (eucDist - forceList.springEqualibrium)
+        * (s[neighborIdx * PART_MAXVAR + PART_XPOS] - s[currIdx * PART_MAXVAR + PART_XPOS]) / eucDist;
+    s[currIdx * PART_MAXVAR + PART_Y_FTOT] += springConst * (eucDist - forceList.springEqualibrium)
+        * (s[neighborIdx * PART_MAXVAR + PART_YPOS] - s[currIdx * PART_MAXVAR + PART_YPOS]) / eucDist;
+    s[currIdx * PART_MAXVAR + PART_Z_FTOT] += springConst * (eucDist - forceList.springEqualibrium) * s[currIdx * PART_MAXVAR + PART_ZPOS]
+        * (s[neighborIdx * PART_MAXVAR + PART_ZPOS] - s[currIdx * PART_MAXVAR + PART_ZPOS]) / eucDist;
+
+    s[neighborIdx * PART_MAXVAR + PART_X_FTOT] -= springConst * (eucDist - forceList.springEqualibrium) * s[neighborIdx * PART_MAXVAR + PART_XPOS]
+        * (s[neighborIdx * PART_MAXVAR + PART_XPOS] - s[currIdx * PART_MAXVAR + PART_XPOS]) / eucDist;
+    s[neighborIdx * PART_MAXVAR + PART_Y_FTOT] -= springConst * (eucDist - forceList.springEqualibrium) * s[neighborIdx * PART_MAXVAR + PART_YPOS]
+        * (s[neighborIdx * PART_MAXVAR + PART_YPOS] - s[currIdx * PART_MAXVAR + PART_YPOS]) / eucDist;
+    s[neighborIdx * PART_MAXVAR + PART_Z_FTOT] -= springConst * (eucDist - forceList.springEqualibrium) * s[neighborIdx * PART_MAXVAR + PART_ZPOS]
+        * (s[neighborIdx * PART_MAXVAR + PART_ZPOS] - s[currIdx * PART_MAXVAR + PART_ZPOS]) / eucDist;
+}
+
 PartSys.prototype.applyForces = function (s, fList) {
     var j = 0;  // i==particle number; j==array index for i-th particle
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
@@ -707,9 +741,9 @@ PartSys.prototype.applyForces = function (s, fList) {
                 var j = m * PART_MAXVAR;  // state var array index for particle # m
                 for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
                     // force from gravity == mass * gravConst * downDirection
-                    s[j + PART_X_FTOT] -= (fList[k].K_drag + 10) * s[j + PART_XVEL];
-                    s[j + PART_Y_FTOT] -= (fList[k].K_drag + 10) * s[j + PART_YVEL];
-                    s[j + PART_Z_FTOT] -= (fList[k].K_drag + 10) * s[j + PART_ZVEL];
+                    s[j + PART_X_FTOT] -= (fList[k].K_drag) * s[j + PART_XVEL];
+                    s[j + PART_Y_FTOT] -= (fList[k].K_drag) * s[j + PART_YVEL];
+                    s[j + PART_Z_FTOT] -= (fList[k].K_drag) * s[j + PART_ZVEL];
                 }
                 break;
             case F_SPRING:
@@ -735,10 +769,23 @@ PartSys.prototype.applyForces = function (s, fList) {
                         * (1 - 2 * m);
                 }
                 break;
-            case F_SPRINGSET:
+            case F_SPRINGSET: //Cloth here
                 var j = m * PART_MAXVAR;
                 for (; m < mmax; m++, j += PART_MAXVAR) {
-
+                    //currMassIdx: m
+                    //retrieve neighbors Idx
+                    let strechingIdx = this.nStretching[m]; //1d array of neighbors
+                    let sheeringIdx = this.nSheering[m]; //1d array of neighbors
+                    let bendingIdx = this.nBending[m]; //[center, neighbor] 2d array
+                    for (let i = 0; i < strechingIdx.length; i++) {
+                        this.applySpringForce(s, fList[k], fList[k].kStretch, m, strechingIdx[i]);
+                    }
+                    for (let i = 0; i < sheeringIdx.length; i++) {
+                        this.applySpringForce(s, fList[k], fList[k].kSheer, m, sheeringIdx[i]);
+                    }
+                    for (let i = 0; i < bendingIdx.length; i++) {
+                        this.applySpringForce(s, fList[k], fList[k].kBend, m, bendingIdx[i][1], bendingIdx[i][0]);
+                    }
                 }
                 break;
             case F_CHARGE:
@@ -768,8 +815,6 @@ PartSys.prototype.applyForces = function (s, fList) {
                             s[j + PART_Z_FTOT] -= fList[k].kSep / dist
                                 * (s[nIdx * PART_MAXVAR + PART_ZPOS] - s[j + PART_ZPOS]);
                         }
-                        // console.log(curNeighbors);
-                        // console.log(s)
                     }
                 }
                 break;
