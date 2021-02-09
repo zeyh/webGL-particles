@@ -106,15 +106,77 @@ PartSys.prototype.initShader = function (vertSrc, fragSrc) {
 
 }
 
-PartSys.prototype.findStretching = function(){
-    // let neighbors = 
+PartSys.prototype.findClothProps = function () {
+    /*
+    find all indexes of mass's neighbors that can apply the 3 force
+    @param: this.clothWidth, this.clothHeight
+    @return: 2d array consist of 1d [x,(center),y] index neighbor
+    */
+    this.nStretching = []; // dim: partCount * it depends
+    this.nSheering = []; // dim: partCount * it depends
+    this.nBending = [];  // dim: partcount * it depends * 2
+    for (let i = 0; i < this.partCount; i++) { //intializing the 2d array [index of outer array corresponding to the index of each particle in partCount!]
+        this.nStretching.push([]);
+        this.nSheering.push([]);
+        this.nBending.push([]); //3d array [[[center1,neighbor1],[center2,neighbor2],...], ...  ]
+    } 
+    for (let i = 0; i < this.partCount; i++) { //generate a graph matrix for each prop with bidirectional edges
+        //* for manhattan-distance 田 like [Stretching mass spring pair]
+        if (i % this.clothWidth == this.clothWidth - 1 && i + this.clothWidth < this.partCount) {
+            // this.nStretching.push([i, i + this.clothWidth]); // last column down...|
+            this.nStretching[i].push(i + this.clothWidth);
+            this.nStretching[i + this.clothWidth].push(i);
+        }
+        else if (i + this.clothWidth < this.partCount) {
+            // this.nStretching.push([i, i + 1]); // left down -
+            // this.nStretching.push([i, i + this.clothWidth]); // |
+            this.nStretching[i].push(i + 1);
+            this.nStretching[i + 1].push(i);
+            this.nStretching[i].push(i + this.clothWidth);
+            this.nStretching[i + this.clothWidth].push(i);
+        }
+        else if (Math.floor(i / this.clothWidth) == this.clothHeight - 1 && i % this.clothWidth != this.clothWidth - 1) {
+            // this.nStretching.push([i, i + 1]); // last row left _
+            this.nStretching[i].push(i+1);
+            this.nStretching[i+1].push(i);
+        }
+
+        //* for X-like [Shearing mass spring pair]
+        if (i % this.clothWidth != this.clothWidth - 1 && Math.floor(i / this.clothWidth) != this.clothHeight - 1) {
+            // this.nSheering.push([i, i + this.clothWidth + 1]) //not last column nor last row \
+            this.nSheering[i].push(i + this.clothWidth + 1);
+            this.nSheering[i + this.clothWidth + 1].push(i);
+        }
+        if (i % this.clothWidth != 0 && Math.floor(i / this.clothWidth) != this.clothHeight - 1) {
+            // this.nSheering.push([i, i + this.clothWidth - 1]) //not first column nor last row /
+            this.nSheering[i].push(i + this.clothWidth - 1);
+            this.nSheering[i + this.clothWidth - 1].push(i);
+        }
+
+        //* for bending - angle change w.r.t. a center particle 田 [left, center, right]
+        if (i % this.clothWidth < this.clothWidth - 2) {
+            // this.nBending.push([i, i+1, i+2]); //not last two column --
+            this.nBending[i].push([i+1, i+2]);
+            this.nBending[i+2].push([i+1, i]);
+        }
+        if (Math.floor(i / this.clothWidth) < this.clothHeight - 2) {
+            // this.nBending.push([i, i + this.clothWidth, i + this.clothWidth * 2]); //not last two row |
+            this.nBending[i].push([i + this.clothWidth, i + this.clothWidth * 2]);
+            this.nBending[i + this.clothWidth * 2].push([i + this.clothWidth, i]);
+        }
+        if(i % this.clothWidth < this.clothWidth - 2 && Math.floor(i / this.clothWidth) < this.clothHeight - 2){
+            // this.nBending.push([i, i+this.clothWidth+1, i+(this.clothWidth+1)*2]); //not last two column & row \
+            this.nBending[i].push([i+this.clothWidth+1, i+(this.clothWidth+1)*2]);
+            this.nBending[i+(this.clothWidth+1)*2].push([i+this.clothWidth+1, i]);
+        }
+        if(i % this.clothWidth > 1 && Math.floor(i / this.clothWidth) < this.clothHeight - 2){
+            // this.nBending.push([i, i+this.clothWidth-1, i+(this.clothWidth-1)*2]); //not first two column & last two row /
+            this.nBending[i].push([i+this.clothWidth-1, i+(this.clothWidth-1)*2]);
+            this.nBending[i+(this.clothWidth-1)*2].push([i+this.clothWidth-1, i]);
+        }
+    }
 }
-PartSys.prototype.findBending = function(){
-    // let neighbors = 
-}
-PartSys.prototype.findShearing= function(){
-    // let neighbors = 
-}
+
 PartSys.prototype.initCloth = function (width, height, spacing) {
     /* 
     ref: http://www.cs.cmu.edu/afs/cs/academic/class/15462-s13/www/ lecture 22 slides
@@ -170,6 +232,7 @@ PartSys.prototype.initCloth = function (width, height, spacing) {
         this.s2.set(this.s1);
     }
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
+    this.findClothProps();
 }
 
 PartSys.prototype.initBoid = function (count) {
@@ -673,7 +736,7 @@ PartSys.prototype.applyForces = function (s, fList) {
                 }
                 break;
             case F_SPRINGSET:
-                var j = m * PART_MAXVAR; 
+                var j = m * PART_MAXVAR;
                 for (; m < mmax; m++, j += PART_MAXVAR) {
 
                 }
