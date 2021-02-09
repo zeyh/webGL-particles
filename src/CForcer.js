@@ -100,7 +100,6 @@ function CForcer() {
     // how fast the spring length is changing, and
     // applied along the direction of the spring.
     this.K_restLength;         // the zero-force length of this spring.
-
 }
 
 CForcer.prototype.printMe = function (opt_src) {

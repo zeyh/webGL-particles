@@ -55,7 +55,7 @@ var g_timeStep = 1000.0 / 60.0;			// current timestep in milliseconds (init to 1
 var g_timeStepMin = g_timeStep;   //holds min,max timestep values since last keypress.
 var g_timeStepMax = g_timeStep;
 
-var g_particleNum = 5;
+var g_particleNum = 6;
 var g_particleArray = [];
 
 function initVBOs(currScheme) {
@@ -83,22 +83,27 @@ function initVBOs(currScheme) {
 
     globalThis.SPRINGMASS = 2;
     var particle3 = new PartSys();
-    particle3.initSpring(2); //need to be 2
+    particle3.initSpring(2); 
     particle3.initShader(particleVert, particleFrag_square);
     g_particleArray[SPRINGMASS] = particle3;
 
     globalThis.FIRE = 3;
     var particle3 = new PartSys();
-    particle3.initFire(600); //need to be 2
+    particle3.initFire(600); 
     particle3.initShader(particleVert, particleFrag);
     g_particleArray[FIRE] = particle3;
 
     globalThis.BOID = 4;
     var particle4 = new PartSys();
-    particle4.initBoid(20); //need to be 2
+    particle4.initBoid(20); 
     particle4.initShader(particleVert, particleFrag_square);
     g_particleArray[BOID] = particle4;
 
+    globalThis.CLOTH = 5;
+    var particle5 = new PartSys();
+    particle5.initCloth(3,3,0.1);  //width, height, spacing
+    particle5.initShader(particleVert, particleFrag_square);
+    g_particleArray[CLOTH] = particle5;
 
     g_vboArray = [grid, plane, sphere_test, sphere];
 }

@@ -106,8 +106,74 @@ PartSys.prototype.initShader = function (vertSrc, fragSrc) {
 
 }
 
+PartSys.prototype.findStretching = function(){
+    // let neighbors = 
+}
+PartSys.prototype.findBending = function(){
+    // let neighbors = 
+}
+PartSys.prototype.findShearing= function(){
+    // let neighbors = 
+}
+PartSys.prototype.initCloth = function (width, height, spacing) {
+    /* 
+    ref: http://www.cs.cmu.edu/afs/cs/academic/class/15462-s13/www/ lecture 22 slides
+    cloth: 
+        internal force: Stretching, Bending, Shearing
+        external: Gravity, Drag, etc,
+                  sum up the spring damper forces acting on each particle 
+    */
+    console.log("🚩");
+    // ! force-causing objects
+    var fTmp = new CForcer();
+    fTmp.forceType = F_SPRINGSET;
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+    console.log("\t\t", this.forceList.length, "CForcer objects:");
+    console.log("\t\t", this.limitList.length, "CLimit objects.");
+
+    // ! ode constants
+    this.clothWidth = width;
+    this.clothHeight = height;
+    this.partCount = this.clothWidth * this.clothHeight;
+    this.spacing = spacing;
+    this.s1 = new Float32Array(this.partCount * PART_MAXVAR);
+    this.s2 = new Float32Array(this.partCount * PART_MAXVAR);
+    this.s1dot = new Float32Array(this.partCount * PART_MAXVAR);
+
+    this.INIT_VEL = 0.15 * 60.0;
+    this.drag = 0.985; //friction force
+    this.grav = 9.832; //gravity constant
+    this.resti = 1.0; //inelastic
+    this.runMode = 3;
+    this.solvType = g_currSolverType;
+    this.constraintType = CONS_BOUNCYBALL1;
+
+    //* initial conditions y0
+    var j = 0;
+    for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+        this.s1[j + PART_XPOS] = i % this.clothWidth * this.spacing;
+        this.s1[j + PART_YPOS] = Math.floor(i / this.clothWidth) * this.spacing;
+        this.s1[j + PART_ZPOS] = 0.0;
+        this.s1[j + PART_WPOS] = 1.0;
+        this.s1[j + PART_R] = 0.5;
+        this.s1[j + PART_G] = 0.5 + i % this.clothWidth / this.partCount;
+        this.s1[j + PART_B] = 0.5 + Math.floor(i / this.clothWidth) / this.partCount;
+        this.s1[j + PART_XVEL] = 0.0;
+        this.s1[j + PART_YVEL] = 0.0;
+        this.s1[j + PART_ZVEL] = 0.0;
+        this.s1[j + PART_DIAM] = 10;
+        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM] / 100;
+        this.s1[j + PART_RENDMODE] = 0.0;
+        this.s1[j + PART_AGE] = 10;
+        this.s2.set(this.s1);
+    }
+    this.FSIZE = this.s1.BYTES_PER_ELEMENT;
+}
+
 PartSys.prototype.initBoid = function (count) {
-    console.log('🐦');
+    // console.log('🐦');
     /* http://www.red3d.com/cwr/boids/
      a) separation, 
      b) cohesion, 
@@ -151,8 +217,8 @@ PartSys.prototype.initBoid = function (count) {
     cTmp.Kresti = 1.0;              // bouncyness: coeff. of restitution.
     this.limitList.push(cTmp);      // append this 'box' constraint object to the
 
-    console.log("\t\t", this.forceList.length, "CForcer objects:");
-    console.log("\t\t", this.limitList.length, "CLimit objects.");
+    // console.log("\t\t", this.forceList.length, "CForcer objects:");
+    // console.log("\t\t", this.limitList.length, "CLimit objects.");
 
     // ! ode constants
     this.partCount = count;
@@ -607,8 +673,10 @@ PartSys.prototype.applyForces = function (s, fList) {
                 }
                 break;
             case F_SPRINGSET:
-                console.log("PartSys.applyForces(), fList[", k, "].forceType:",
-                    fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                var j = m * PART_MAXVAR; 
+                for (; m < mmax; m++, j += PART_MAXVAR) {
+
+                }
                 break;
             case F_CHARGE:
                 console.log("PartSys.applyForces(), fList[", k, "].forceType:",
@@ -690,9 +758,9 @@ PartSys.prototype.applyForces = function (s, fList) {
                 let VEL_THRESHOLD = 0.5;
                 for (; m < mmax; m++, j += PART_MAXVAR) {
                     // * for centroid of boids follow mouse FIXME: minus the centroid...
-                    if(g_curMousePosX4Boid && g_curMousePosY4Boid){
-                        let dx = (g_curMousePosX4Boid - canvas.width/2)/canvas.width/2;
-                        let dy = (g_curMousePosY4Boid - canvas.height/2)/canvas.height/2;
+                    if (g_curMousePosX4Boid && g_curMousePosY4Boid) {
+                        let dx = (g_curMousePosX4Boid - canvas.width / 2) / canvas.width / 2;
+                        let dy = (g_curMousePosY4Boid - canvas.height / 2) / canvas.height / 2;
                         // console.log(dx, dy);
                         var j = m * PART_MAXVAR;  // state var array index for particle # m
                         for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
@@ -1028,7 +1096,7 @@ PartSys.prototype.doConstraints = function () {
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
                 if (eucDistIndv(0, 0, 0,
                     this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]
-                ) >= BOID_RAD)  {
+                ) >= BOID_RAD) {
                     // console.log(this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]);
                     this.s2[j + PART_XPOS] += (this.s2[j + PART_XPOS] < 0) ? 1 : -1 * BOUNCE_STEP; //FIXME: map to the surface of the sphere
                     this.s2[j + PART_YPOS] += (this.s2[j + PART_YPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
