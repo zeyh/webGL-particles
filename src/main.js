@@ -58,7 +58,20 @@ var g_timeStepMax = g_timeStep;
 var g_particleNum = 6;
 var g_particleArray = [];
 
+function reset(){
+    var resetSliders = function () {
+        for (var i = 0; i < gui.__controllers.length; i++) {
+            gui.__controllers[i].setValue(gui.__controllers[i].initialValue);
+        }
+    };
+    resetSliders();
+    initVBOs();
+}
+
 function initVBOs(currScheme) {
+    if(!currScheme){
+        currScheme = g_shadingScheme[0];
+    }
     var grid = new VBO_genetic(diffuseVert, diffuseFrag, grid_vertices, grid_colors, grid_normals, null, 0);
     grid.init();
     var plane = new VBO_genetic(currScheme[0], currScheme[1], plane_vertices, plane_colors, plane_normals, plane_indices, currScheme[2]);
@@ -101,7 +114,7 @@ function initVBOs(currScheme) {
 
     globalThis.CLOTH = 5;
     var particle5 = new PartSys();
-    particle5.initCloth(10,5,0.05);  //width, height, spacing
+    particle5.initCloth(Math.floor(params.ClothWidth),Math.floor(params.ClothHeight),params.ClothSpacing);  //width, height, spacing
     particle5.initShader(particleVert, particleFrag_square);
     g_particleArray[CLOTH] = particle5;
 

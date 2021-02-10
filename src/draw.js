@@ -40,7 +40,7 @@ function drawAll([grid, plane, sphere_test, sphere]) {
 
     // cloth
     pushMatrix(g_modelMatrix);
-    g_modelMatrix.setTranslate(0.5, 0, 2);
+    g_modelMatrix.setTranslate(1.2, 1.5, 2);
     drawParticle(CLOTH, g_modelMatrix, g_viewProjMatrix);
     g_modelMatrix = popMatrix();
     pushMatrix(g_modelMatrix);

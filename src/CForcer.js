@@ -62,10 +62,10 @@ function CForcer() {
     // particles from 'targFirst' on, set targCount < 0.
     // For springs, set targCount=0 & use e1,e2 below.
     // ! F_SEPERATION & F_ALIGN [TEXTBOOK PAGE104]........................................
-    this.kSep = params.Seperation; //collision avoidance seperation 
-    this.kVel = params.Alignment; //velocity matching alighment
-    this.kCen = params.Cohesion; //cohesion centering, pull i towards j
-    this.kFly = params.Evasion; //flying direction for everyone (evasion?)
+    this.kSep = params.BoidSeperation; //collision avoidance seperation 
+    this.kVel = params.BoidAlignment; //velocity matching alighment
+    this.kCen = params.BoidCohesion; //cohesion centering, pull i towards j
+    this.kFly = params.BoidEvasion; //flying direction for everyone (evasion?)
     this.flyDir = new Vector4([0.8, 0.2, 0.3, 1]); // 'down' direction vector for gravity.
 
     // ! F_GRAV_E  Earth Gravity variables........................................
@@ -81,7 +81,7 @@ function CForcer() {
     // avoids near-infinite forces when planets collide.
 
     // ! F_DRAG Viscous Drag Variables............................................
-    this.K_drag = 0.2;       // force = -velocity*K_drag.
+    this.K_drag = params.DragForce;       // force = -velocity*K_drag.
     // (in Euler solver, which assumes constant force
     // during each timestep, drag of 0.15 multiplies
     // s1 velocity by (1-0.15)==0.85)
@@ -102,10 +102,10 @@ function CForcer() {
     this.K_restLength;         // the zero-force length of this spring.
 
     // ! F_SPRINGSET cloth variables;........................................
-    this.kStretch = 0.1;
-    this.kSheer = 0.1;
-    this.kBend = 0.02;
-    this.springEqualibrium = 0.02;
+    this.kStretch = params.ClothStreching;
+    this.kSheer = params.ClothSheering;
+    this.kBend = params.ClothBending;
+    this.springEqualibrium = params.ClothRestLength;
 
 }
 

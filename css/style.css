@@ -13,6 +13,7 @@ body {
     top: 4%;
 }
 
+
 #center {
     position: absolute;
     top: 50%;
@@ -39,6 +40,16 @@ button:hover {
     opacity: 0.8;
     transition: 0.3s;
     text-shadow: 3px 3px 3px rgb(211, 210, 210);
+}
+
+#reset{
+    color:rgb(248, 145, 145);
+    border-color: rgb(248, 145, 145);
+}
+#reset:hover {
+    opacity: 0.8;
+    transition: 0.3s;
+    text-shadow: 3px 3px 3px rgb(248, 145, 145);
 }
 
 .instructions {

@@ -197,12 +197,20 @@ function hexToRgb(hex) { //https://stackoverflow.com/questions/5623838/rgb-to-he
 
 // ! ===================================for dat-gui setup
 var params = {
-    Boundary: 2, //in constraint BOID_RAD
-    NeighborSize: 0.15, //findNeighbor() this.neighborRadius 
-    Seperation: 1.5, //CForcer kSep
-    Alignment: 0.5, //kVel
-    Cohesion: 2.5, //kCen
-    Evasion: 0.1, //kFly
+    BoidBoundarySize: 2.00, //in constraint BOID_RAD
+    BoidNeighborSize: 0.15, //findNeighbor() this.neighborRadius 
+    BoidSeperation: 1.50, //CForcer kSep
+    BoidAlignment: 0.50, //kVel
+    BoidCohesion: 2.50, //kCen
+    BoidEvasion: 0.10, //kFly
+    ClothWidth: 5,
+    ClothHeight: 5,
+    ClothSpacing: 0.2,
+    ClothStreching: 3.10,   //kStretch
+    ClothSheering: 0.01, //kSheer
+    ClothBending: 0.01,  //kBend
+    ClothRestLength:0.10, //springEqualibrium
+    DragForce: 0.15, //K_drag
 };
 var params_fly = {
     turning_angle: 0.00,
@@ -216,48 +224,108 @@ view.use_frustum = false;
 view.fly = false;
 var guiBoundary, guiNeighbor, guiSep, guiAli, guiCoh, guiEva;
 var guiArr_frustum, guiArr_fly;
-var gui;
+var gui = new dat.GUI();
 function setControlPanel() {
     if (g_schemeOpt == 0) {
-        gui = new dat.GUI();
-        //frustrum controller
-        // var frustrumController = gui.add(view, 'use_frustum').listen();
-        guiBoundary = gui.add(params, 'Boundary', 1.00, 10.00);
-        guiNeighbor = gui.add(params, 'NeighborSize', 0.05, 5.00).onChange(
+        guiBoundary = gui.add(params, 'BoidBoundarySize', 1.00, 10.00);
+
+        guiNeighbor = gui.add(params, 'BoidNeighborSize', 0.05, 5.00).onChange(
             function(value){ //update findNeighbor criteria
                 g_particleArray[BOID].neighborRadius = value;
                 g_particleArray[BOID].updateNeighbors();
             }
         );
-        guiSep = gui.add(params, 'Seperation', 0.00, 3.00).onChange(
+        guiSep = gui.add(params, 'BoidSeperation', 0.00, 3.00).onChange(
             function(value){ //update findNeighbor criteria
                 for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
                     g_particleArray[BOID].forceList[i].kSep = value;
                 }
             }
         );
-        guiAli = gui.add(params, 'Alignment', 0.00, 3.00).onChange(
+        guiAli = gui.add(params, 'BoidAlignment', 0.00, 3.00).onChange(
             function(value){ //update findNeighbor criteria
                 for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
                     g_particleArray[BOID].forceList[i].kVel = value;
                 }
             }
         );
-        guiCoh = gui.add(params, 'Cohesion', 0.00, 3.00).onChange(
+        guiCoh = gui.add(params, 'BoidCohesion', 0.00, 3.00).onChange(
             function(value){ //update findNeighbor criteria
                 for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
                     g_particleArray[BOID].forceList[i].kCen = value;
                 }
             }
         );
-        guiEva = gui.add(params, 'Evasion', 0.00, 3.00).onChange(
+        guiEva = gui.add(params, 'BoidEvasion', 0.00, 5.00).onChange(
             function(value){ //update findNeighbor criteria
                 for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
                     g_particleArray[BOID].forceList[i].kFly = value;
                 }
             }
         );
-        guiArr_frustum = [guiBoundary, guiNeighbor, guiSep, guiAli, guiCoh, guiEva];
+        gui.add(params, 'ClothWidth', 3, 10).onChange(
+            function(value){ //update findNeighbor criteria
+                let width = Math.floor(value);
+                let particle5 = new PartSys();
+                particle5.initCloth(width, Math.floor(params.ClothHeight),0.2);  //width, height, spacing
+                particle5.initShader(particleVert, particleFrag_square);
+                g_particleArray[CLOTH] = particle5;
+            }
+        );
+        gui.add(params, 'ClothHeight', 3, 10).onChange(
+            function(value){ //update findNeighbor criteria
+                let height = Math.floor(value);
+                let particle5 = new PartSys();
+                particle5.initCloth(Math.floor(params.ClothWidth), height,0.2);  //width, height, spacing
+                particle5.initShader(particleVert, particleFrag_square);
+                g_particleArray[CLOTH] = particle5;
+            }
+        ); 
+        gui.add(params, 'ClothSpacing', 0.05, 1).onChange(
+            function(value){ //update findNeighbor criteria
+                let particle5 = new PartSys();
+                particle5.initCloth(Math.floor(params.ClothWidth), Math.floor(params.ClothHeight), value);  //width, height, spacing
+                particle5.initShader(particleVert, particleFrag_square);
+                g_particleArray[CLOTH] = particle5;
+            }
+        );
+        gui.add(params, 'ClothStreching', 0.00, 10.00).onChange(
+            function(value){ //update findNeighbor criteria
+                for(let i=0; i<g_particleArray[CLOTH].forceList.length; i++){
+                    g_particleArray[CLOTH].forceList[i].kStretch = value;
+                }
+            }
+        );
+        gui.add(params, 'ClothSheering', 0.00, 1.00).onChange(
+            function(value){ //update findNeighbor criteria
+                for(let i=0; i<g_particleArray[CLOTH].forceList.length; i++){
+                    g_particleArray[CLOTH].forceList[i].kSheer = value;
+                }
+            }
+        );
+        gui.add(params, 'ClothBending', 0.00, 1.00).onChange(
+            function(value){ //update findNeighbor criteria
+                for(let i=0; i<g_particleArray[CLOTH].forceList.length; i++){
+                    g_particleArray[CLOTH].forceList[i].kBend = value;
+                }
+            }
+        );
+        gui.add(params, 'ClothRestLength', 0.01, 1.00).onChange(
+            function(value){ //update findNeighbor criteria
+                for(let i=0; i<g_particleArray[CLOTH].forceList.length; i++){
+                    g_particleArray[CLOTH].forceList[i].springEqualibrium = value;
+                }
+            }
+        );
+        gui.add(params, 'DragForce', 0.01, 1.00).onChange(
+            function(value){ //update findNeighbor criteria
+                for(let i=0; i<g_particleArray[CLOTH].forceList.length; i++){
+                    g_particleArray[CLOTH].forceList[i].K_drag = value;
+                }
+            }
+        );
+
+        // guiArr_frustum = [guiBoundary, guiNeighbor, guiSep, guiAli, guiCoh, guiEva];
         // disableGui(guiArr_frustum); //by default
         // frustrumController.onChange(function (value) {
         //     isFrustrum = value

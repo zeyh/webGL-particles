@@ -112,67 +112,57 @@ PartSys.prototype.findClothProps = function () {
     @param: this.clothWidth, this.clothHeight
     @return: 2d array consist of 1d [x,(center),y] index neighbor
     */
-    this.nStretching = []; // dim: partCount * it depends
-    this.nSheering = []; // dim: partCount * it depends
-    this.nBending = [];  // dim: partcount * it depends * 2
-    for (let i = 0; i < this.partCount; i++) { //intializing the 2d array [index of outer array corresponding to the index of each particle in partCount!]
-        this.nStretching.push([]);
-        this.nSheering.push([]);
-        this.nBending.push([]); //3d array [[[center1,neighbor1],[center2,neighbor2],...], ...  ]
+    this.nStretching = [...Array(this.partCount)];
+    this.nSheering = [...Array(this.partCount)];
+    this.nBending = [...Array(this.partCount)];
+    for (let i = 0; i < this.partCount; i++) {
+        this.nStretching[i] = [];
+        this.nSheering[i] = [];
+        this.nBending[i] = [];
     }
     for (let i = 0; i < this.partCount; i++) { //generate a graph matrix for each prop with bidirectional edges
         //* for manhattan-distance 田 like [Stretching mass spring pair]
         if (i % this.clothWidth == this.clothWidth - 1 && i + this.clothWidth < this.partCount) {
             // this.nStretching.push([i, i + this.clothWidth]); // last column down...|
             this.nStretching[i].push(i + this.clothWidth);
-            // this.nStretching[i + this.clothWidth].push(i);
         }
         else if (i + this.clothWidth < this.partCount) {
             // this.nStretching.push([i, i + 1]); // left down -
             // this.nStretching.push([i, i + this.clothWidth]); // |
             this.nStretching[i].push(i + 1);
-            // this.nStretching[i + 1].push(i);
             this.nStretching[i].push(i + this.clothWidth);
-            // this.nStretching[i + this.clothWidth].push(i);
         }
         else if (Math.floor(i / this.clothWidth) == this.clothHeight - 1 && i % this.clothWidth != this.clothWidth - 1) {
             // this.nStretching.push([i, i + 1]); // last row left _
             this.nStretching[i].push(i + 1);
-            // this.nStretching[i + 1].push(i);
         }
 
         //* for X-like [Shearing mass spring pair]
         if (i % this.clothWidth != this.clothWidth - 1 && Math.floor(i / this.clothWidth) != this.clothHeight - 1) {
             // this.nSheering.push([i, i + this.clothWidth + 1]) //not last column nor last row \
             this.nSheering[i].push(i + this.clothWidth + 1);
-            this.nSheering[i + this.clothWidth + 1].push(i);
         }
         if (i % this.clothWidth != 0 && Math.floor(i / this.clothWidth) != this.clothHeight - 1) {
             // this.nSheering.push([i, i + this.clothWidth - 1]) //not first column nor last row /
             this.nSheering[i].push(i + this.clothWidth - 1);
-            this.nSheering[i + this.clothWidth - 1].push(i);
         }
 
         //* for bending - angle change w.r.t. a center particle 田 [left, center, right]
         if (i % this.clothWidth < this.clothWidth - 2) {
             // this.nBending.push([i, i+1, i+2]); //not last two column --
-            this.nBending[i].push([i + 1, i + 2]);
-            this.nBending[i + 2].push([i + 1, i]);
+            this.nBending[i].push(i + 2);
         }
         if (Math.floor(i / this.clothWidth) < this.clothHeight - 2) {
             // this.nBending.push([i, i + this.clothWidth, i + this.clothWidth * 2]); //not last two row |
-            this.nBending[i].push([i + this.clothWidth, i + this.clothWidth * 2]);
-            this.nBending[i + this.clothWidth * 2].push([i + this.clothWidth, i]);
+            this.nBending[i].push(i + this.clothWidth * 2);
         }
         if (i % this.clothWidth < this.clothWidth - 2 && Math.floor(i / this.clothWidth) < this.clothHeight - 2) {
             // this.nBending.push([i, i+this.clothWidth+1, i+(this.clothWidth+1)*2]); //not last two column & row \
-            this.nBending[i].push([i + this.clothWidth + 1, i + (this.clothWidth + 1) * 2]);
-            this.nBending[i + (this.clothWidth + 1) * 2].push([i + this.clothWidth + 1, i]);
+            this.nBending[i].push(i + (this.clothWidth + 1) * 2);
         }
         if (i % this.clothWidth > 1 && Math.floor(i / this.clothWidth) < this.clothHeight - 2) {
             // this.nBending.push([i, i+this.clothWidth-1, i+(this.clothWidth-1)*2]); //not first two column & last two row /
-            this.nBending[i].push([i + this.clothWidth - 1, i + (this.clothWidth - 1) * 2]);
-            this.nBending[i + (this.clothWidth - 1) * 2].push([i + this.clothWidth - 1, i]);
+            this.nBending[i].push(i + (this.clothWidth - 1) * 2);
         }
     }
 }
@@ -185,7 +175,7 @@ PartSys.prototype.initCloth = function (width, height, spacing) {
         external: Gravity, Drag, etc,
                   sum up the spring damper forces acting on each particle 
     */
-    console.log("🚩");
+    // console.log("🚩");
     // ! force-causing objects
     var fTmp = new CForcer();
     fTmp.forceType = F_SPRINGSET;
@@ -199,8 +189,22 @@ PartSys.prototype.initCloth = function (width, height, spacing) {
     fTmp.partCount = -1;
     this.forceList.push(fTmp);
 
-    console.log("\t\t", this.forceList.length, "CForcer objects:");
-    console.log("\t\t", this.limitList.length, "CLimit objects.");
+    fTmp = new CForcer();
+    fTmp.forceType = F_GRAV_E;
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
+    var cTmp = new CLimit();
+    cTmp.hitType = HIT_BOUNCE_VEL;
+    cTmp.limitType = LIM_FIXEDPT;
+    cTmp.partFirst = 0;
+    cTmp.partCount = -1;
+    this.limitList.push(cTmp);
+    this.constraintType = LIM_FIXEDPT;
+
+    // console.log("\t\t", this.forceList.length, "CForcer objects:");
+    // console.log("\t\t", this.limitList.length, "CLimit objects.");
 
     // ! ode constants
     this.clothWidth = width;
@@ -211,29 +215,24 @@ PartSys.prototype.initCloth = function (width, height, spacing) {
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR);
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR);
 
-    this.INIT_VEL = 0.15 * 60.0;
-    this.drag = 0.285; //friction force
-    this.grav = 9.832; //gravity constant
-    this.resti = 1.0; //inelastic
     this.runMode = 3;
     this.solvType = g_currSolverType;
-    this.constraintType = CONS_BOUNCYBALL1;
 
     //* initial conditions y0
     var j = 0;
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
         this.s1[j + PART_XPOS] = i % this.clothWidth * this.spacing;
-        this.s1[j + PART_YPOS] = Math.floor(i / this.clothWidth) * this.spacing;
+        this.s1[j + PART_YPOS] = -1 * Math.floor(i / this.clothWidth) * this.spacing;
         this.s1[j + PART_ZPOS] = 0.0;
         this.s1[j + PART_WPOS] = 1.0;
-        this.s1[j + PART_R] = 0.5;
-        this.s1[j + PART_G] = 0.5 + i % this.clothWidth / this.partCount;
-        this.s1[j + PART_B] = 0.5 + Math.floor(i / this.clothWidth) / this.partCount;
+        this.s1[j + PART_R] = 0.2 + 1.0 * i % this.clothWidth / this.partCount;
+        this.s1[j + PART_G] = 0.5 + 1.0 * i % this.clothWidth / this.partCount;
+        this.s1[j + PART_B] = 0.4 + 2.0 * Math.floor(i / this.clothWidth) / this.partCount;
         this.s1[j + PART_XVEL] = 0.0;
         this.s1[j + PART_YVEL] = 0.0;
         this.s1[j + PART_ZVEL] = 0.0;
-        this.s1[j + PART_DIAM] = 5;
-        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM] / 100;
+        this.s1[j + PART_DIAM] = 10;
+        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM] / 1000;
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 10;
         this.s2.set(this.s1);
@@ -306,7 +305,7 @@ PartSys.prototype.initBoid = function (count) {
     for (let i = 0; i < this.partCount; i++) {
         this.neighbors.push([]);
     }
-    this.neighborRadius = params.NeighborSize;
+    this.neighborRadius = params.BoidNeighborSize;
 
     //* initial conditions
     var j = 0;
@@ -659,18 +658,18 @@ PartSys.prototype.applySpringForce = function (s, forceList, springConst, currId
         s[currIdx * PART_MAXVAR + PART_XPOS], s[currIdx * PART_MAXVAR + PART_YPOS], s[currIdx * PART_MAXVAR + PART_ZPOS],
         s[neighborIdx * PART_MAXVAR + PART_XPOS], s[neighborIdx * PART_MAXVAR + PART_YPOS], s[neighborIdx * PART_MAXVAR + PART_ZPOS]
     );
-    s[currIdx * PART_MAXVAR + PART_X_FTOT] += springConst * (eucDist - forceList.springEqualibrium)
+    s[currIdx * PART_MAXVAR + PART_X_FTOT] += springConst * (eucDist - forceList.springEqualibrium) 
         * (s[neighborIdx * PART_MAXVAR + PART_XPOS] - s[currIdx * PART_MAXVAR + PART_XPOS]) / eucDist;
-    s[currIdx * PART_MAXVAR + PART_Y_FTOT] += springConst * (eucDist - forceList.springEqualibrium)
+    s[currIdx * PART_MAXVAR + PART_Y_FTOT] += springConst * (eucDist - forceList.springEqualibrium) 
         * (s[neighborIdx * PART_MAXVAR + PART_YPOS] - s[currIdx * PART_MAXVAR + PART_YPOS]) / eucDist;
-    s[currIdx * PART_MAXVAR + PART_Z_FTOT] += springConst * (eucDist - forceList.springEqualibrium) * s[currIdx * PART_MAXVAR + PART_ZPOS]
+    s[currIdx * PART_MAXVAR + PART_Z_FTOT] += springConst * (eucDist - forceList.springEqualibrium) 
         * (s[neighborIdx * PART_MAXVAR + PART_ZPOS] - s[currIdx * PART_MAXVAR + PART_ZPOS]) / eucDist;
 
-    s[neighborIdx * PART_MAXVAR + PART_X_FTOT] -= springConst * (eucDist - forceList.springEqualibrium) * s[neighborIdx * PART_MAXVAR + PART_XPOS]
+    s[neighborIdx * PART_MAXVAR + PART_X_FTOT] -= springConst * (eucDist - forceList.springEqualibrium)
         * (s[neighborIdx * PART_MAXVAR + PART_XPOS] - s[currIdx * PART_MAXVAR + PART_XPOS]) / eucDist;
-    s[neighborIdx * PART_MAXVAR + PART_Y_FTOT] -= springConst * (eucDist - forceList.springEqualibrium) * s[neighborIdx * PART_MAXVAR + PART_YPOS]
+    s[neighborIdx * PART_MAXVAR + PART_Y_FTOT] -= springConst * (eucDist - forceList.springEqualibrium) 
         * (s[neighborIdx * PART_MAXVAR + PART_YPOS] - s[currIdx * PART_MAXVAR + PART_YPOS]) / eucDist;
-    s[neighborIdx * PART_MAXVAR + PART_Z_FTOT] -= springConst * (eucDist - forceList.springEqualibrium) * s[neighborIdx * PART_MAXVAR + PART_ZPOS]
+    s[neighborIdx * PART_MAXVAR + PART_Z_FTOT] -= springConst * (eucDist - forceList.springEqualibrium) 
         * (s[neighborIdx * PART_MAXVAR + PART_ZPOS] - s[currIdx * PART_MAXVAR + PART_ZPOS]) / eucDist;
 }
 
@@ -770,21 +769,15 @@ PartSys.prototype.applyForces = function (s, fList) {
                 }
                 break;
             case F_SPRINGSET: //Cloth here
-                var j = m * PART_MAXVAR;
-                for (; m < mmax; m++, j += PART_MAXVAR) {
-                    //currMassIdx: m
-                    //retrieve neighbors Idx
-                    let strechingIdx = this.nStretching[m]; //1d array of neighbors
-                    let sheeringIdx = this.nSheering[m]; //1d array of neighbors
-                    let bendingIdx = this.nBending[m]; //[center, neighbor] 2d array
-                    for (let i = 0; i < strechingIdx.length; i++) {
-                        this.applySpringForce(s, fList[k], fList[k].kStretch, m, strechingIdx[i]);
+                for (let i = 0; i < this.partCount; i++) {
+                    for (let j = 0; j < this.nStretching[i].length; j++) {
+                        this.applySpringForce(s, fList[k], fList[k].kStretch, i, this.nStretching[i][j]);
                     }
-                    for (let i = 0; i < sheeringIdx.length; i++) {
-                        this.applySpringForce(s, fList[k], fList[k].kSheer, m, sheeringIdx[i]);
+                    for (let j = 0; j < this.nSheering[i].length; j++) {
+                        this.applySpringForce(s, fList[k], fList[k].kSheer, i, this.nSheering[i][j]);
                     }
-                    for (let i = 0; i < bendingIdx.length; i++) {
-                        this.applySpringForce(s, fList[k], fList[k].kBend, m, bendingIdx[i][1], bendingIdx[i][0]);
+                    for (let j = 0; j < this.nBending[i].length; j++) {
+                        this.applySpringForce(s, fList[k], fList[k].kBend, i, this.nBending[i][j]);
                     }
                 }
                 break;
@@ -1188,16 +1181,28 @@ function findCentroid(s) {
     }
     return [centroid[0] / partCount, centroid[1] / partCount, centroid[2] / partCount];
 }
+
 PartSys.prototype.doConstraints = function () {
     /*
     accepts state variables s1 and s2 
     an array of constraint-applying objects.  
     This function applies constraints to all changes between s1 and s2, and modifies s2 so that the result meets all the constraints.  
     */
-    let BOID_RAD = params.Boundary;
+    let BOID_RAD = params.BoidBoundarySize;
     let BOID_BOUNCE = 1.0;
     let BOUNCE_STEP = 0.001;
     switch (this.constraintType) {
+        case LIM_FIXEDPT: //fix two point of a cloth
+            let fixedIdxArray = [0, this.clothWidth - 1]; //range from 0 to this.partCount-1
+            for (let i = 0; i < fixedIdxArray.length; i++) {
+                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_XPOS] = fixedIdxArray[i] % this.clothWidth * this.spacing;
+                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_YPOS] = -1 * Math.floor(fixedIdxArray[i] / this.clothWidth) * this.spacing;
+                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_ZPOS] = 0.0;
+                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_R] = 1.0;
+                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_G] = 1.0;
+                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_B] = 1.0;
+            }
+            break;
         case LIM_ANCHOR: // Keep specified particle(s) at world-space location
             var j = 0;
             // let centroid = findCentroid(this.s2);

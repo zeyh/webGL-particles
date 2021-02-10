@@ -119,6 +119,7 @@ const LIM_PULLEY  =15;    // Keep constant sum-of-distances for 3 particles
                           // A,B,Pivot:  ||A-Pivot||+||B-Pivot|| = dmax.
 const LIM_MAXVAR  =16;    // Max number of possible limitType values available.
 
+const LIM_FIXEDPT = 17; //keep two point of particle (cloth fixed)
 //=============================================================================
 //==============================================================================
 function CLimit() {
