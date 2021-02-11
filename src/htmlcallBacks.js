@@ -26,7 +26,7 @@ var g_dx; //record mouse changes
 var g_dy;
 var g_prevDx;
 var g_prevDy;
-var solverStr = ["Velocity Verlet", "Backward Euler", 
+var solverStr = ["Velocity Verlet", "Backward Euler",
     "Runge Kutta 4", "2-Step Adams Bash", "MidPoint", "Euler"];
 
 function setSolver() {
@@ -209,8 +209,13 @@ var params = {
     ClothStreching: 3.10,   //kStretch
     ClothSheering: 0.01, //kSheer
     ClothBending: 0.01,  //kBend
-    ClothRestLength:0.10, //springEqualibrium
+    ClothRestLength: 0.10, //springEqualibrium
     DragForce: 0.15, //K_drag
+    fireMassDecay: 0.2,
+    fireDiamDecay: 1.5,
+    fireRedDecay: 0.0,
+    fireGreenDecay: 0.0,
+    fireBlueDecay: 2,
 };
 var params_fly = {
     turning_angle: 0.00,
@@ -230,59 +235,59 @@ function setControlPanel() {
         guiBoundary = gui.add(params, 'BoidBoundarySize', 1.00, 10.00);
 
         guiNeighbor = gui.add(params, 'BoidNeighborSize', 0.05, 5.00).onChange(
-            function(value){ //update findNeighbor criteria
+            function (value) { //update findNeighbor criteria
                 g_particleArray[BOID].neighborRadius = value;
                 g_particleArray[BOID].updateNeighbors();
             }
         );
         guiSep = gui.add(params, 'BoidSeperation', 0.00, 3.00).onChange(
-            function(value){ //update findNeighbor criteria
-                for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[BOID].forceList.length; i++) {
                     g_particleArray[BOID].forceList[i].kSep = value;
                 }
             }
         );
         guiAli = gui.add(params, 'BoidAlignment', 0.00, 3.00).onChange(
-            function(value){ //update findNeighbor criteria
-                for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[BOID].forceList.length; i++) {
                     g_particleArray[BOID].forceList[i].kVel = value;
                 }
             }
         );
         guiCoh = gui.add(params, 'BoidCohesion', 0.00, 3.00).onChange(
-            function(value){ //update findNeighbor criteria
-                for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[BOID].forceList.length; i++) {
                     g_particleArray[BOID].forceList[i].kCen = value;
                 }
             }
         );
         guiEva = gui.add(params, 'BoidEvasion', 0.00, 5.00).onChange(
-            function(value){ //update findNeighbor criteria
-                for(let i=0; i<g_particleArray[BOID].forceList.length; i++){
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[BOID].forceList.length; i++) {
                     g_particleArray[BOID].forceList[i].kFly = value;
                 }
             }
         );
         gui.add(params, 'ClothWidth', 3, 10).onChange(
-            function(value){ //update findNeighbor criteria
+            function (value) { //update findNeighbor criteria
                 let width = Math.floor(value);
                 let particle5 = new PartSys();
-                particle5.initCloth(width, Math.floor(params.ClothHeight),0.2);  //width, height, spacing
+                particle5.initCloth(width, Math.floor(params.ClothHeight), 0.2);  //width, height, spacing
                 particle5.initShader(particleVert, particleFrag_square);
                 g_particleArray[CLOTH] = particle5;
             }
         );
         gui.add(params, 'ClothHeight', 3, 10).onChange(
-            function(value){ //update findNeighbor criteria
+            function (value) { //update findNeighbor criteria
                 let height = Math.floor(value);
                 let particle5 = new PartSys();
-                particle5.initCloth(Math.floor(params.ClothWidth), height,0.2);  //width, height, spacing
+                particle5.initCloth(Math.floor(params.ClothWidth), height, 0.2);  //width, height, spacing
                 particle5.initShader(particleVert, particleFrag_square);
                 g_particleArray[CLOTH] = particle5;
             }
-        ); 
+        );
         gui.add(params, 'ClothSpacing', 0.05, 1).onChange(
-            function(value){ //update findNeighbor criteria
+            function (value) { //update findNeighbor criteria
                 let particle5 = new PartSys();
                 particle5.initCloth(Math.floor(params.ClothWidth), Math.floor(params.ClothHeight), value);  //width, height, spacing
                 particle5.initShader(particleVert, particleFrag_square);
@@ -290,41 +295,79 @@ function setControlPanel() {
             }
         );
         gui.add(params, 'ClothStreching', 0.00, 10.00).onChange(
-            function(value){ //update findNeighbor criteria
-                for(let i=0; i<g_particleArray[CLOTH].forceList.length; i++){
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
                     g_particleArray[CLOTH].forceList[i].kStretch = value;
                 }
             }
         );
         gui.add(params, 'ClothSheering', 0.00, 1.00).onChange(
-            function(value){ //update findNeighbor criteria
-                for(let i=0; i<g_particleArray[CLOTH].forceList.length; i++){
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
                     g_particleArray[CLOTH].forceList[i].kSheer = value;
                 }
             }
         );
         gui.add(params, 'ClothBending', 0.00, 1.00).onChange(
-            function(value){ //update findNeighbor criteria
-                for(let i=0; i<g_particleArray[CLOTH].forceList.length; i++){
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
                     g_particleArray[CLOTH].forceList[i].kBend = value;
                 }
             }
         );
         gui.add(params, 'ClothRestLength', 0.01, 1.00).onChange(
-            function(value){ //update findNeighbor criteria
-                for(let i=0; i<g_particleArray[CLOTH].forceList.length; i++){
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
                     g_particleArray[CLOTH].forceList[i].springEqualibrium = value;
                 }
             }
         );
         gui.add(params, 'DragForce', 0.01, 1.00).onChange(
-            function(value){ //update findNeighbor criteria
-                for(let i=0; i<g_particleArray[CLOTH].forceList.length; i++){
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
                     g_particleArray[CLOTH].forceList[i].K_drag = value;
                 }
             }
         );
+        gui.add(params, 'fireMassDecay', 0.01, 1.00).onChange(
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[FIRE].forceList.length; i++) {
+                    g_particleArray[FIRE].forceList[i].fireMassDecay = value;
+                }
+            }
+        );
+        gui.add(params, 'fireDiamDecay', 0.2, 3.00).onChange(
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[FIRE].forceList.length; i++) {
+                    g_particleArray[FIRE].forceList[i].fireDiamDecay = value;
+                }
+            }
+        );
 
+        gui.add(params, 'fireRedDecay', 0.0, 2.00).onChange(
+            function (value) { //update findNeighbor criteria
+                // colorReset();
+                for (let i = 0; i < g_particleArray[FIRE].forceList.length; i++) {
+                    g_particleArray[FIRE].forceList[i].fireRedDecay = value;
+                }
+            }
+        );
+        gui.add(params, 'fireGreenDecay', 0.0, 2.00).onChange(
+            function (value) { //update findNeighbor criteria
+                // colorReset();
+                for (let i = 0; i < g_particleArray[FIRE].forceList.length; i++) {
+                    g_particleArray[FIRE].forceList[i].fireGreenDecay = value;
+                }
+            }
+        ); 
+        gui.add(params, 'fireBlueDecay', 0.0, 2.00).onChange(
+            function (value) { //update findNeighbor criteria
+                // colorReset();
+                for (let i = 0; i < g_particleArray[FIRE].forceList.length; i++) {
+                    g_particleArray[FIRE].forceList[i].fireBlueDecay = value;
+                }
+            }
+        );
         // guiArr_frustum = [guiBoundary, guiNeighbor, guiSep, guiAli, guiCoh, guiEva];
         // disableGui(guiArr_frustum); //by default
         // frustrumController.onChange(function (value) {
@@ -728,7 +771,7 @@ var g_mousePosY_curr;
     var mousePos;
     document.onmousemove = handleMouseMove;
     setInterval(getMousePosition, 100); // setInterval repeats every X ms
-    setInterval(getMousePosition4Boid, 100); 
+    setInterval(getMousePosition4Boid, 100);
     function handleMouseMove(event) {
         var dot, eventDoc, doc, body, pageX, pageY;
         event = event || window.event; // IE-ism
@@ -754,7 +797,7 @@ var g_mousePosY_curr;
     }
     function getMousePosition4Boid() {
         var pos = mousePos;
-        if(pos){
+        if (pos) {
             g_curMousePosX4Boid = pos.x;
             g_curMousePosY4Boid = pos.y;
         }

@@ -391,11 +391,16 @@ PartSys.prototype.initFire = function (count) {
     // console.log('🔥');
     // ! force-causing objects
     var fTmp = new CForcer();       // create a force-causing object, and
-    // * earth gravity for all particles:
     fTmp.forceType = F_GRAV_E;      // set it to earth gravity, and
     fTmp.targFirst = 0;             // set it to affect ALL particles:
     fTmp.partCount = -1;            // (negative value means ALL particles and IGNORE all other Cforcer members...)
     this.forceList.push(fTmp);      // append this 'gravity' force object to 
+    fTmp = new CForcer();           // create a force-causing object, and
+    fTmp.forceType = F_FIRE;      // set it to earth gravity, and
+    fTmp.targFirst = 0;             // set it to affect ALL particles:
+    fTmp.partCount = -1;            // (negative value means ALL particles and IGNORE all other Cforcer members...)
+    this.forceList.push(fTmp);      // append this 'gravity' force object to 
+
     // ! Create & init all constraint-causing objects
     var cTmp = new CLimit();        // creat constraint-causing object, and
     cTmp.hitType = HIT_BOUNCE_VEL;  // set how particles 'bounce' from its surface,
@@ -426,6 +431,7 @@ PartSys.prototype.initFire = function (count) {
     this.constraintType = CONS_FIRE; //TODO:
     this.drag = 0.9; //friction force //used in bouncy constraint
     this.resti = 1.0; //inelastic
+
     //* initial conditions
     var j = 0;
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
@@ -442,11 +448,12 @@ PartSys.prototype.initFire = function (count) {
         this.s1[j + PART_YVEL] = this.INIT_VEL * (0.3 + 0.3 * this.randY);
         this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randZ);
         this.s1[j + PART_DIAM] = 40 * Math.random(); // on-screen diameter, in pixels
-        this.s1[j + PART_MASS] = 1.0;
+        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM];
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 10 + 100 * Math.random();
         this.s2.set(this.s1);
     }
+    this.centroid = findCentroid(this.s1);
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
 }
 
@@ -658,18 +665,18 @@ PartSys.prototype.applySpringForce = function (s, forceList, springConst, currId
         s[currIdx * PART_MAXVAR + PART_XPOS], s[currIdx * PART_MAXVAR + PART_YPOS], s[currIdx * PART_MAXVAR + PART_ZPOS],
         s[neighborIdx * PART_MAXVAR + PART_XPOS], s[neighborIdx * PART_MAXVAR + PART_YPOS], s[neighborIdx * PART_MAXVAR + PART_ZPOS]
     );
-    s[currIdx * PART_MAXVAR + PART_X_FTOT] += springConst * (eucDist - forceList.springEqualibrium) 
+    s[currIdx * PART_MAXVAR + PART_X_FTOT] += springConst * (eucDist - forceList.springEqualibrium)
         * (s[neighborIdx * PART_MAXVAR + PART_XPOS] - s[currIdx * PART_MAXVAR + PART_XPOS]) / eucDist;
-    s[currIdx * PART_MAXVAR + PART_Y_FTOT] += springConst * (eucDist - forceList.springEqualibrium) 
+    s[currIdx * PART_MAXVAR + PART_Y_FTOT] += springConst * (eucDist - forceList.springEqualibrium)
         * (s[neighborIdx * PART_MAXVAR + PART_YPOS] - s[currIdx * PART_MAXVAR + PART_YPOS]) / eucDist;
-    s[currIdx * PART_MAXVAR + PART_Z_FTOT] += springConst * (eucDist - forceList.springEqualibrium) 
+    s[currIdx * PART_MAXVAR + PART_Z_FTOT] += springConst * (eucDist - forceList.springEqualibrium)
         * (s[neighborIdx * PART_MAXVAR + PART_ZPOS] - s[currIdx * PART_MAXVAR + PART_ZPOS]) / eucDist;
 
     s[neighborIdx * PART_MAXVAR + PART_X_FTOT] -= springConst * (eucDist - forceList.springEqualibrium)
         * (s[neighborIdx * PART_MAXVAR + PART_XPOS] - s[currIdx * PART_MAXVAR + PART_XPOS]) / eucDist;
-    s[neighborIdx * PART_MAXVAR + PART_Y_FTOT] -= springConst * (eucDist - forceList.springEqualibrium) 
+    s[neighborIdx * PART_MAXVAR + PART_Y_FTOT] -= springConst * (eucDist - forceList.springEqualibrium)
         * (s[neighborIdx * PART_MAXVAR + PART_YPOS] - s[currIdx * PART_MAXVAR + PART_YPOS]) / eucDist;
-    s[neighborIdx * PART_MAXVAR + PART_Z_FTOT] -= springConst * (eucDist - forceList.springEqualibrium) 
+    s[neighborIdx * PART_MAXVAR + PART_Z_FTOT] -= springConst * (eucDist - forceList.springEqualibrium)
         * (s[neighborIdx * PART_MAXVAR + PART_ZPOS] - s[currIdx * PART_MAXVAR + PART_ZPOS]) / eucDist;
 }
 
@@ -707,6 +714,26 @@ PartSys.prototype.applyForces = function (s, fList) {
             this.updateNeighbors();
         }
         switch (fList[k].forceType) {
+            case F_FIRE:
+                var j = m * PART_MAXVAR;  // state var array index for particle # m
+                for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
+                    let eucDist = eucDistIndv(
+                        this.centroid[0], this.centroid[1], this.centroid[2],
+                        s[j + PART_XPOS], s[j + PART_YPOS], s[j + PART_ZPOS]
+                    ) / (Math.sqrt(2) / 2);
+                    let RGBsum = eucDist * (fList[k].fireRedDecay + fList[k].fireGreenDecay + fList[k].fireBlueDecay);
+                    // // s[j + PART_R] -=  eucDist  * fList[k].fireRedDecay/RGBsum;
+                    // // s[j + PART_G] -= eucDist  * fList[k].fireGreenDecay/RGBsum;
+                    // s[j + PART_B] -= eucDist * fList[k].fireBlueDecay / RGBsum;
+                    // s[j + PART_R] =  eucDist;
+                    this.roundRand();
+                    // s[j + PART_G] += fList[k].fireGreenDecay == 0 ? 0 : eucDist * fList[k].fireGreenDecay;
+                    s[j + PART_B] = eucDist * fList[k].fireBlueDecay;
+
+                    s[j + PART_DIAM] -= eucDist * fList[k].fireDiamDecay;
+                    s[j + PART_MASS] = s[j + PART_DIAM] * fList[k].fireMassDecay;
+                }
+                break;
             case F_MOUSE:     // Spring-like connection to mouse cursor
                 console.log("PartSys.applyForces(), fList[", k, "].forceType:",
                     fList[k].forceType, "NOT YET IMPLEMENTED!!");
@@ -1137,7 +1164,7 @@ PartSys.prototype.solver = function () {
             let s2dot = new Float32Array(this.partCount * PART_MAXVAR);
             this.dotFinder(s2dot, this.s2)
             // estimate s2.vel from average of s1and s2 accelerations
-            // s2.vel = s1.vel +  (s2.acc + s1.acc)*(h/2)
+            // s2.vel = s1.vel + (s2.acc + s1.acc)*(h/2)
             var j = 0;
             for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
                 this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL] + (s2dot[j + PART_XVEL] + this.s1dot[j + PART_XVEL]) * g_timeStep * 0.001 / 2;
@@ -1403,8 +1430,14 @@ PartSys.prototype.swap = function () {
     this.s1.set(this.s2);
 }
 
+
 PartSys.prototype.perlinNoise = function () {
-    //https://github.com/josephg/noisejs
+    /*
+    https://adrianb.io/2014/08/09/perlinnoise.html
+    https://github.com/josephg/noisejs
+    */
+    console.log(perlin3(this.randX, this.randY, this.randZ));
+
 }
 
 PartSys.prototype.roundRand = function () {

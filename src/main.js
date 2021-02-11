@@ -19,27 +19,25 @@ References: besides the inline links in index.html, the code is modified from
     Done: fix camera viewpoint/aim point  (‘strafe’ perpendicular)
     Done: explicit solvers*3 basic spring mass pair
     Done: 3D Explicit & implicit solvers*5
+    Done: mass-spring like linked systems with interactions (cloth-like)
+    Done: boid constraint+control
+    Done:  limit particle in shapes[box, sphere]
     * Almost: onscreen instructions
-    * Almost: boid constraint+control+debug
+    * Almost: boid sphere boundary calculation mapping
     * Almost[0.5d]: fire🔥 with noise/transparency/texture
+    * Almost: cloth with wind/mouse drag
     
-    ? Doing[2d]: mass-spring like linked systems with interactions (cloth-like)
+    ? Doing: add transparency/texture to fire 
+    ? Doing[2d]: fluids
 
-    Todo[1d]: limit particle in shapes[box, sphere, cylinder]
+    Todo[1d]: limit particle in shapes[cylinder]
     Todo[2d]: tornados within cylinder [300+]
-    Todo[2d]: fluids
-    Todo[1d]: textures 
     Todo[1d+]: cohesive
 
     Note: 
         console.log(JSON.parse(JSON.stringify(g_particleArray[index].s1)));
-
     🐞 FIXME: 
-    ! need testing: 
-        4 forces with boid - static state??? with boundary
-        position update when boid hit the sphere-wall & shrinking from large boundary to small radius
-        isEvasion intepreted right? http://www.red3d.com/cwr/boids/
-
+    ! need testing
 */
 
 "use strict"
@@ -58,7 +56,7 @@ var g_timeStepMax = g_timeStep;
 var g_particleNum = 6;
 var g_particleArray = [];
 
-function reset(){
+function reset() {
     var resetSliders = function () {
         for (var i = 0; i < gui.__controllers.length; i++) {
             gui.__controllers[i].setValue(gui.__controllers[i].initialValue);
@@ -68,8 +66,18 @@ function reset(){
     initVBOs();
 }
 
+function colorReset() {
+    var j = 0;
+    for (var i = 0; i < g_particleArray[FIRE].partCount; i += 1, j += PART_MAXVAR) {
+        g_particleArray[FIRE].s1[j + PART_R] = gui.__controllers[16].initialValue;
+        g_particleArray[FIRE].s1[j + PART_G] = gui.__controllers[17].initialValue;
+        g_particleArray[FIRE].s1[j + PART_B] = gui.__controllers[18].initialValue;
+    }
+}
+
+
 function initVBOs(currScheme) {
-    if(!currScheme){
+    if (!currScheme) {
         currScheme = g_shadingScheme[0];
     }
     var grid = new VBO_genetic(diffuseVert, diffuseFrag, grid_vertices, grid_colors, grid_normals, null, 0);
@@ -96,25 +104,25 @@ function initVBOs(currScheme) {
 
     globalThis.SPRINGMASS = 2;
     var particle3 = new PartSys();
-    particle3.initSpring(2); 
+    particle3.initSpring(2);
     particle3.initShader(particleVert, particleFrag_square);
     g_particleArray[SPRINGMASS] = particle3;
 
     globalThis.FIRE = 3;
     var particle3 = new PartSys();
-    particle3.initFire(600); 
+    particle3.initFire(600);
     particle3.initShader(particleVert, particleFrag);
     g_particleArray[FIRE] = particle3;
 
     globalThis.BOID = 4;
     var particle4 = new PartSys();
-    particle4.initBoid(20); 
+    particle4.initBoid(20);
     particle4.initShader(particleVert, particleFrag_square);
     g_particleArray[BOID] = particle4;
 
     globalThis.CLOTH = 5;
     var particle5 = new PartSys();
-    particle5.initCloth(Math.floor(params.ClothWidth),Math.floor(params.ClothHeight),params.ClothSpacing);  //width, height, spacing
+    particle5.initCloth(Math.floor(params.ClothWidth), Math.floor(params.ClothHeight), params.ClothSpacing);  //width, height, spacing
     particle5.initShader(particleVert, particleFrag_square);
     g_particleArray[CLOTH] = particle5;
 

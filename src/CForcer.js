@@ -36,7 +36,8 @@ const F_SEPERATION = 10;
 const F_ALIGN = 11;
 const F_COHESION = 12;
 const F_FLY = 13;
-const F_MAXKINDS = 14;      // 'max' is always the LAST name in our list;
+const F_FIRE = 14;
+const F_MAXKINDS = 15;      // 'max' is always the LAST name in our list;
 // gives the total number of choices for forces.
 
 /* NOTE THAT different forceType values (e.g. gravity vs spring) will need 
@@ -106,6 +107,13 @@ function CForcer() {
     this.kSheer = params.ClothSheering;
     this.kBend = params.ClothBending;
     this.springEqualibrium = params.ClothRestLength;
+
+    // ! Fire
+    this.fireMassDecay = params.fireMassDecay;
+    this.fireDiamDecay = params.fireDiamDecay;
+    this.fireRedDecay = params.fireRedDecay;
+    this.fireGreenDecay = params.fireBlueDecay;
+    this.fireBlueDecay = params.fireGreenDecay;
 
 }
 
