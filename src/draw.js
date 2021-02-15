@@ -30,7 +30,7 @@ function drawAll([grid, plane, sphere_test, sphere]) {
     // g_modelMatrix = popMatrix();
     // pushMatrix(g_modelMatrix);
 
-    // // particle SPRINGMASS
+    // particle SPRINGMASS
     // pushMatrix(g_modelMatrix);
     // g_modelMatrix.setTranslate(-1, -0.5, 1);
     // drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
@@ -40,7 +40,7 @@ function drawAll([grid, plane, sphere_test, sphere]) {
 
     // cloth
     pushMatrix(g_modelMatrix);
-    g_modelMatrix.setTranslate(1.2, 1.5, 2);
+    g_modelMatrix.setTranslate(-3.6, 1.5, 2);
     drawParticle(CLOTH, g_modelMatrix, g_viewProjMatrix);
     g_modelMatrix = popMatrix();
     pushMatrix(g_modelMatrix);
@@ -54,8 +54,15 @@ function drawAll([grid, plane, sphere_test, sphere]) {
 
     // particle FIRE
     pushMatrix(g_modelMatrix);
-    g_modelMatrix.setTranslate(-3, 0.4, 1);
+    g_modelMatrix.setTranslate(-0.6, 0.5, 1.7);
     drawParticle(FIRE, g_modelMatrix, g_viewProjMatrix);
+    g_modelMatrix = popMatrix();
+    pushMatrix(g_modelMatrix);
+
+    // particle TORNADO
+    pushMatrix(g_modelMatrix);
+    g_modelMatrix.setTranslate(0.5, 0.0, 2.5);
+    drawParticle(TORNADO, g_modelMatrix, g_viewProjMatrix);
     g_modelMatrix = popMatrix();
     pushMatrix(g_modelMatrix);
 

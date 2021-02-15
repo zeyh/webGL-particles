@@ -106,6 +106,77 @@ PartSys.prototype.initShader = function (vertSrc, fragSrc) {
 
 }
 
+PartSys.prototype.initSand = function (count) {
+    /*
+    argument selects among several different kinds of particle systems 
+    and initial conditions.
+    */
+    // ! force-causing objects
+    var fTmp = new CForcer();       // create a force-causing object, and
+    // * earth gravity for all particles:
+    fTmp.forceType = F_GRAV_E;      // set it to earth gravity, and
+    fTmp.targFirst = 0;             // set it to affect ALL particles:
+    fTmp.partCount = -1;            // (negative value means ALL particles and IGNORE all other Cforcer members...)
+    this.forceList.push(fTmp);      // append this 'gravity' force object to 
+
+    var cTmp = new CLimit();
+    cTmp.limitType = LIM_COLLISION;
+    cTmp.partFirst = 0;
+    cTmp.partCount = -1;
+    this.limitList.push(cTmp);
+
+    cTmp = new CLimit();
+    cTmp.limitType = LIM_FLOOR;
+    cTmp.partFirst = 0;
+    cTmp.partCount = -1;
+    this.limitList.push(cTmp);
+
+    cTmp = new CLimit();
+    cTmp.limitType = LIM_CYLINDER;
+    cTmp.partFirst = 0;
+    cTmp.partCount = -1;
+    this.limitList.push(cTmp);
+
+
+    // ! ode constants
+    this.partCount = count;
+    this.s1 = new Float32Array(this.partCount * PART_MAXVAR);
+    this.s2 = new Float32Array(this.partCount * PART_MAXVAR);
+    this.s1dot = new Float32Array(this.partCount * PART_MAXVAR);
+
+    this.INIT_VEL = 0.15 * 60.0;
+    this.runMode = 2;
+    this.solvType = g_currSolverType;
+    this.CYLINDAR_RAD = 1.8;
+    //* initial conditions
+    var j = 0;
+    for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+        this.roundRand(); // * y(0)
+        this.s1[j + PART_XPOS] =  this.CYLINDAR_RAD * randn_bm();
+        this.s1[j + PART_YPOS] = 0.5+randn_bm();
+        this.s1[j + PART_ZPOS] = this.CYLINDAR_RAD * randn_bm();
+        this.s1[j + PART_WPOS] = 1.0;
+        this.s1[j + PART_R] = 0.3 + randn_bm();
+        this.s1[j + PART_G] = 0.3 + randn_bm();
+        this.s1[j + PART_B] = 0.4 + randn_bm();
+        this.roundRand(); // * y'(0)
+        this.s1[j + PART_XVEL] = 20*(randn_bm() - 0.5);
+        this.s1[j + PART_YVEL] = 2*(randn_bm() - 0.5);
+        this.s1[j + PART_ZVEL] = 20*(randn_bm() - 0.5);
+        this.s1[j + PART_DIAM] = 30; // on-screen diameter, in pixels
+        this.s1[j + PART_MASS] = this.s1[j + PART_DIAM];
+        this.s1[j + PART_RENDMODE] = 0.0;
+        this.s1[j + PART_AGE] = 30 + 100 * Math.random();
+        this.s2.set(this.s1);
+    }
+    this.FSIZE = this.s1.BYTES_PER_ELEMENT;
+    this.floorstate = new Int8Array(this.partCount);
+    for (let i = 0; i < this.floorstate.length; i++) {
+        this.floorstate[i] = -1;
+    }
+    this.accumulated = new Float32Array(this.partCount);
+}
+
 PartSys.prototype.findClothProps = function () {
     /*
     find all indexes of mass's neighbors that can apply the 3 force
@@ -196,12 +267,10 @@ PartSys.prototype.initCloth = function (width, height, spacing) {
     this.forceList.push(fTmp);
 
     var cTmp = new CLimit();
-    cTmp.hitType = HIT_BOUNCE_VEL;
     cTmp.limitType = LIM_FIXEDPT;
     cTmp.partFirst = 0;
     cTmp.partCount = -1;
     this.limitList.push(cTmp);
-    this.constraintType = LIM_FIXEDPT;
 
     // console.log("\t\t", this.forceList.length, "CForcer objects:");
     // console.log("\t\t", this.limitList.length, "CLimit objects.");
@@ -276,14 +345,9 @@ PartSys.prototype.initBoid = function (count) {
 
     // ! Create & init all constraint-causing objects
     var cTmp = new CLimit();        // creat constraint-causing object, and
-    cTmp.hitType = HIT_BOUNCE_VEL;  // set how particles 'bounce' from its surface,
     cTmp.limitType = LIM_ANCHOR;       // confine particles inside axis-aligned 
     cTmp.partFirst = 0;             // applies to ALL particles; starting at 0 
     cTmp.partCount = -1;            // through all the rest of them.
-    cTmp.xMin = -500.0; cTmp.xMax = 500.0;  // box extent:  +/- 1.0 box at origin
-    cTmp.yMin = -2.0; cTmp.yMax = 2.0;
-    cTmp.zMin = -50.0; cTmp.zMax = 50.0;
-    cTmp.Kresti = 1.0;              // bouncyness: coeff. of restitution.
     this.limitList.push(cTmp);      // append this 'box' constraint object to the
 
     // console.log("\t\t", this.forceList.length, "CForcer objects:");
@@ -298,9 +362,7 @@ PartSys.prototype.initBoid = function (count) {
     this.INIT_VEL = 0.15 * 60.0;
     this.runMode = 3;
     this.solvType = g_currSolverType;
-    this.constraintType = LIM_ANCHOR; //TODO:
-    this.drag = 0.9; //friction force //used in bouncy constraint
-    this.resti = 1.0; //inelastic
+
     this.neighbors = []; //index for self, ith index array content for its neighbors
     for (let i = 0; i < this.partCount; i++) {
         this.neighbors.push([]);
@@ -359,6 +421,7 @@ PartSys.prototype.updateNeighbors = function () {
         this.neighbors[i] = this.findNeighbors(i);
     }
 }
+
 PartSys.prototype.findNeighbors = function (currIdx) {
     /* 
     find all neighbors within the radius for given index's corresponding mass
@@ -387,6 +450,35 @@ PartSys.prototype.findNeighbors = function (currIdx) {
     return neighbors;
 }
 
+function findNeighbors(s, currIdx, radius) {
+    /* 
+    find all neighbors within the radius for given index's corresponding mass
+    @param: current bird's index [0, this.partCount-1]
+    @return: an array of current bird's neighbors' index
+    */
+    // let self = this.s1.slice(currIdx * PART_MAXVAR, currIdx * PART_MAXVAR + PART_MAXVAR);
+    var j = 0;
+    let neighbors = [];
+    for (var i = 0; i < s.length / PART_MAXVAR; i += 1, j += PART_MAXVAR) {
+        if (i != currIdx) {
+            // let currNei = this.s1.slice(j, j + PART_MAXVAR);
+            let currDist = eucDistIndv(
+                s[currIdx * PART_MAXVAR + PART_XPOS],
+                s[currIdx * PART_MAXVAR + PART_YPOS],
+                s[currIdx * PART_MAXVAR + PART_ZPOS],
+                s[j + PART_XPOS],
+                s[j + PART_YPOS],
+                s[j + PART_ZPOS]
+            );
+            if (currDist < radius) {
+                neighbors.push(i);
+            }
+        }
+    }
+    return neighbors;
+}
+
+
 PartSys.prototype.initFire = function (count) {
     // console.log('🔥');
     // ! force-causing objects
@@ -403,18 +495,11 @@ PartSys.prototype.initFire = function (count) {
 
     // ! Create & init all constraint-causing objects
     var cTmp = new CLimit();        // creat constraint-causing object, and
-    cTmp.hitType = HIT_BOUNCE_VEL;  // set how particles 'bounce' from its surface,
-    cTmp.limitType = LIM_VOL;       // confine particles inside axis-aligned 
+    cTmp.limitType = CONS_FIRE;       // confine particles inside axis-aligned 
     // rectangular volume that
     cTmp.partFirst = 0;             // applies to ALL particles; starting at 0 
     cTmp.partCount = -1;            // through all the rest of them.
-    cTmp.xMin = -1.0; cTmp.xMax = 1.0;  // box extent:  +/- 1.0 box at origin
-    cTmp.yMin = -1.0; cTmp.yMax = 2.0;
-    cTmp.zMin = -1.0; cTmp.zMax = 1.0;
-    cTmp.Kresti = 1.0;              // bouncyness: coeff. of restitution.
-    // (and IGNORE all other CLimit members...)
     this.limitList.push(cTmp);      // append this 'box' constraint object to the
-    // 'limitList' array of constraint-causing objects.     
 
     // console.log("\t\t", this.forceList.length, "CForcer objects:");                           
     // console.log("\t\t", this.limitList.length, "CLimit objects.");
@@ -428,9 +513,6 @@ PartSys.prototype.initFire = function (count) {
     this.INIT_VEL = 0.15 * 60.0;
     this.runMode = 3;
     this.solvType = g_currSolverType;
-    this.constraintType = CONS_FIRE; //TODO:
-    this.drag = 0.9; //friction force //used in bouncy constraint
-    this.resti = 1.0; //inelastic
 
     //* initial conditions
     var j = 0;
@@ -495,7 +577,6 @@ PartSys.prototype.initSpring = function (count) {
     this.resti = 1.0; //inelastic
     this.runMode = 3;
     this.solvType = g_currSolverType;
-    this.constraintType = CONS_BOUNCYBALL1;
 
     //* initial conditions y0
     var j = 0;
@@ -545,7 +626,7 @@ PartSys.prototype.initBouncy3D = function (count) {
     // ! Create & init all constraint-causing objects
     var cTmp = new CLimit();        // creat constraint-causing object, and
     cTmp.hitType = HIT_BOUNCE_VEL;  // set how particles 'bounce' from its surface,
-    cTmp.limitType = LIM_VOL;       // confine particles inside axis-aligned 
+    cTmp.limitType = CONS_BOUNCYBALL1;       // confine particles inside axis-aligned 
     // rectangular volume that
     cTmp.partFirst = 0;             // applies to ALL particles; starting at 0 
     cTmp.partCount = -1;            // through all the rest of them.
@@ -569,7 +650,6 @@ PartSys.prototype.initBouncy3D = function (count) {
     this.resti = 1.0; //inelastic
     this.runMode = 3;
     this.solvType = g_currSolverType;
-    this.constraintType = CONS_BOUNCYBALL1;
 
     //* initial conditions
     var j = 0;
@@ -593,7 +673,6 @@ PartSys.prototype.initBouncy3D = function (count) {
         this.s2.set(this.s1);
     }
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
-
 }
 
 PartSys.prototype.switchToMe = function () {
@@ -616,6 +695,20 @@ PartSys.prototype.switchToMe = function () {
         PART_MAXVAR * this.FSIZE, PART_DIAM * this.FSIZE);
     gl.enableVertexAttribArray(this.a_ptSizeID);
 
+}
+
+function randn_bm() {
+    /*
+    from: https://stackoverflow.com/questions/25582882/javascript-math-random-normal-distribution-gaussian-bell-curve
+    uses the Box–Muller transform to give you a normal distribution between 0 and 1 inclusive
+    */
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+    while (v === 0) v = Math.random();
+    let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    num = num / 10.0 + 0.5; // Translate to 0 -> 1
+    if (num > 1 || num < 0) return randn_bm(); // resample between 0 and 1
+    return num;
 }
 
 PartSys.prototype.isReady = function () { //very brief sanity check
@@ -739,15 +832,32 @@ PartSys.prototype.applyForces = function (s, fList) {
                     fList[k].forceType, "NOT YET IMPLEMENTED!!");
                 break;
             case F_GRAV_E:    // Earth-gravity pulls 'downwards' as defined by downDir
-                var j = m * PART_MAXVAR;  // state var array index for particle # m
-                for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
-                    // force from gravity == mass * gravConst * downDirection
-                    s[j + PART_X_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
-                        fList[k].downDir.elements[0];
-                    s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
-                        fList[k].downDir.elements[1];
-                    s[j + PART_Z_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
-                        fList[k].downDir.elements[2];
+                if (this.floorstate == undefined) {
+                    var j = m * PART_MAXVAR;  // state var array index for particle # m
+                    for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
+                        // force from gravity == mass * gravConst * downDirection
+                        s[j + PART_X_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                            fList[k].downDir.elements[0];
+                        s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                            fList[k].downDir.elements[1];
+                        s[j + PART_Z_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                            fList[k].downDir.elements[2];
+                    }
+                }
+   
+                else if (Math.min.apply(Math,this.floorstate) < 0) {
+                    var j = m * PART_MAXVAR;  // state var array index for particle # m
+                    for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
+                        // force from gravity == mass * gravConst * downDirection
+                        s[j + PART_X_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                            fList[k].downDir.elements[0];
+                        s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                            fList[k].downDir.elements[1];
+                        s[j + PART_Z_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
+                            fList[k].downDir.elements[2];
+                    }
+                }
+                else{ //should be steady system
                 }
                 break;
             case F_GRAV_P:    // planetary gravity between particle # e1 and e2.
@@ -1193,6 +1303,7 @@ PartSys.prototype.eulerMethod = function (s2, s1, s1dot, h) {
     return s2;
 }
 
+
 function findCentroid(s) {
     /*
     @param: a long list of state variables
@@ -1209,6 +1320,46 @@ function findCentroid(s) {
     return [centroid[0] / partCount, centroid[1] / partCount, centroid[2] / partCount];
 }
 
+function findCentroidIdxBased(s, IdxArray) {
+    /*
+   @param: a long list of state variables, idx
+   @return the xyz position of its centroid
+   */
+    var j = 0;
+    let centroid = new Float32Array(3);
+    let partCount = s.length / PART_MAXVAR;
+    for (var i = 0; i < partCount; i += 1, j += PART_MAXVAR) {
+        if (IdxArray.includes(i)) {
+            centroid[0] += s[j + PART_XPOS];
+            centroid[1] += s[j + PART_YPOS];
+            centroid[2] += s[j + PART_ZPOS];
+        }
+    }
+    return [centroid[0] / partCount, centroid[1] / partCount, centroid[2] / partCount];
+}
+
+function maxDirection(x, y, z) {
+    if (x > y && x > z) {
+        return [1, 0, 0];
+    }
+    else if (y > x && y > z) {
+        return [0, 1, 0];
+    }
+    else {
+        return [0, 0, 1];
+    }
+}
+
+function isReachFloor(floorstate, neighbors) {
+    let reachFloor = false;
+    for (let n = 0; n < neighbors.length; n++) {
+        if (floorstate[neighbors[n]] != -1) {
+            return reachFloor;
+        }
+    }
+    return reachFloor;
+}
+
 PartSys.prototype.doConstraints = function () {
     /*
     accepts state variables s1 and s2 
@@ -1218,206 +1369,283 @@ PartSys.prototype.doConstraints = function () {
     let BOID_RAD = params.BoidBoundarySize;
     let BOID_BOUNCE = 1.0;
     let BOUNCE_STEP = 0.001;
-    switch (this.constraintType) {
-        case LIM_FIXEDPT: //fix two point of a cloth
-            let fixedIdxArray = [0, this.clothWidth - 1]; //range from 0 to this.partCount-1
-            for (let i = 0; i < fixedIdxArray.length; i++) {
-                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_XPOS] = fixedIdxArray[i] % this.clothWidth * this.spacing;
-                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_YPOS] = -1 * Math.floor(fixedIdxArray[i] / this.clothWidth) * this.spacing;
-                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_ZPOS] = 0.0;
-                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_R] = 1.0;
-                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_G] = 1.0;
-                this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_B] = 1.0;
-            }
-            break;
-        case LIM_ANCHOR: // Keep specified particle(s) at world-space location
-            var j = 0;
-            // let centroid = findCentroid(this.s2);
-            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                if (eucDistIndv(0, 0, 0,
-                    this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]
-                ) >= BOID_RAD) {
-                    // console.log(this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]);
-                    this.s2[j + PART_XPOS] += (this.s2[j + PART_XPOS] < 0) ? 1 : -1 * BOUNCE_STEP; //FIXME: map to the surface of the sphere
-                    this.s2[j + PART_YPOS] += (this.s2[j + PART_YPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
-                    this.s2[j + PART_ZPOS] += (this.s2[j + PART_ZPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
-                    this.s2[j + PART_XVEL] *= -BOID_BOUNCE;
-                    this.s2[j + PART_YVEL] *= -BOID_BOUNCE;
-                    this.s2[j + PART_ZVEL] *= -BOID_BOUNCE;
+    for (var l = 0; l < this.limitList.length; l++) {
+        let curLim = this.limitList[l];
+        switch (curLim.limitType) {
+            case LIM_FLOOR:
+                const FLOORPOS = -0.5;
+                for (let i = 0; i < this.partCount; i++) {
+                    //floor constraint
+                    if (this.s2[i * PART_MAXVAR + PART_YPOS] < FLOORPOS || this.s2[i * PART_MAXVAR + PART_YPOS] < this.accumulated[i] + FLOORPOS) {
+                        this.floorstate[i] = 0;
+                        // console.log(i, this.accumulated[i])
+                        this.s2[i * PART_MAXVAR + PART_YPOS] = this.accumulated[i] + FLOORPOS;
+                        this.s2[i * PART_MAXVAR + PART_XVEL] = 0;
+                        this.s2[i * PART_MAXVAR + PART_YVEL] = 0;
+                        this.s2[i * PART_MAXVAR + PART_ZVEL] = 0;
+                        this.s2[i * PART_MAXVAR + PART_X_FTOT] = 0;
+                        this.s2[i * PART_MAXVAR + PART_Y_FTOT] = 0;
+                        this.s2[i * PART_MAXVAR + PART_Z_FTOT] = 0;
+                    }
                 }
-            }
-            break;
-        case CONS_FIRE:
-            var j = 0;  // i==particle number; j==array index for i-th particle
-            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                this.s2[j + PART_AGE] -= 1;     // decrement lifetime.
-                if (this.s2[j + PART_AGE] <= 0) { // End of life: RESET this particle!
-                    this.roundRand();
-                    this.s2[j + PART_XPOS] = -0.0 + 0.1 * this.randX;
-                    this.s2[j + PART_YPOS] = -1.0;
-                    this.s2[j + PART_ZPOS] = -0.0 + 0.1 * this.randZ;
-                    this.s2[j + PART_WPOS] = 1.0;
-                    this.roundRand();
-                    this.s2[j + PART_XVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randX);
-                    this.s2[j + PART_YVEL] = this.INIT_VEL * (0.3 + 0.3 * this.randY);
-                    this.s2[j + PART_ZVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randZ);
-                    this.s2[j + PART_MASS] = 1.0;      // mass, in kg.
-                    this.s2[j + PART_DIAM] = 40 * Math.random(); // on-screen diameter, in pixels
-                    this.s2[j + PART_RENDMODE] = 0.0;
-                    this.s2[j + PART_AGE] = 10 + 100 * Math.random();
-                } // if age <=0
-            }
-        case CONS_BOUNCYBALL0:
-            var j = 0;  // i==particle number; j==array index for i-th particle
-            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                // simple velocity-reversal: 
-                if (this.s2[j + PART_XPOS] < -0.9 && this.s2[j + PART_XVEL] < 0.0) {
-                    // bounce on left (-X) wall
-                    this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL];
-                }
-                else if (this.s2[j + PART_XPOS] > 0.9 && this.s2[j + PART_XVEL] > 0.0) {
-                    // bounce on right (+X) wall
-                    this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL];
-                } //---------------------------
-                if (this.s2[j + PART_YPOS] < -0.9 && this.s2[j + PART_YVEL] < 0.0) {
-                    // bounce on floor (-Y)
-                    this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL];
-                }
-                else if (this.s2[j + PART_YPOS] > 0.9 && this.s2[j + PART_YVEL] > 0.0) {
-                    // bounce on ceiling (+Y)
-                    this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL];
-                } //---------------------------
-                if (this.s2[j + PART_ZPOS] < -0.9 && this.s2[j + PART_ZVEL] < 0.0) {
-                    // bounce on near wall (-Z)
-                    this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL];
-                }
-                else if (this.s2[j + PART_ZPOS] > 0.9 && this.s2[j + PART_ZVEL] > 0.0) {
-                    // bounce on far wall (+Z)
-                    this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL];
-                }
-                //--------------------------
-                // The above constraints change ONLY the velocity; nothing explicitly
-                // forces the bouncy-ball to stay within the walls. If we begin with a
-                // bouncy-ball on floor with zero velocity, gravity will cause it to 'fall' 
-                // through the floor during the next timestep.  At the end of that timestep
-                // our velocity-only constraint will scale velocity by -this.resti, but its
-                // position is still below the floor!  Worse, the resti-weakened upward 
-                // velocity will get cancelled by the new downward velocity added by gravity 
-                // during the NEXT time-step. This gives the ball a net downwards velocity 
-                // again, which again gets multiplied by -this.resti to make a slight upwards
-                // velocity, but with the ball even further below the floor. As this cycle
-                // repeats, the ball slowly sinks further and further downwards.
-                // THUS the floor needs this position-enforcing constraint as well:
-                if (this.s2[j + PART_YPOS] < -0.9) this.s2[j + PART_YPOS] = -0.9;
-                else if (this.s2[j + PART_YPOS] > 0.9) this.s2[j + PART_YPOS] = 0.9; // ceiling
-                if (this.s2[j + PART_XPOS] < -0.9) this.s2[j + PART_XPOS] = -0.9; // left wall
-                else if (this.s2[j + PART_XPOS] > 0.9) this.s2[j + PART_XPOS] = 0.9; // right wall
-                if (this.s2[j + PART_ZPOS] < -0.9) this.s2[j + PART_ZPOS] = -0.9; // near wall
-                else if (this.s2[j + PART_ZPOS] > 0.9) this.s2[j + PART_ZPOS] = 0.9; // far wall
-                // Our simple 'bouncy-ball' particle system needs this position-limiting
-                // constraint ONLY for the floor and not the walls, as no forces exist that
-                // could 'push' a zero-velocity particle against the wall. But suppose we
-                // have a 'blowing wind' force that pushes particles left or right? Any
-                // particle that comes to rest against our left or right wall could be
-                // slowly 'pushed' through that wall as well -- THUS we need position-limiting
-                // constraints for ALL the walls:
-            } // end of for-loop thru all particles
-            break;
-        case CONS_BOUNCYBALL1:
-            var j = 0;  // i==particle number; j==array index for i-th particle
-            for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                //--------  left (-X) wall  ----------
-                if (this.s2[j + PART_XPOS] < -0.9) {// && this.s2[j + PART_XVEL] < 0.0 ) {
-                    // collision!
-                    this.s2[j + PART_XPOS] = -0.9;// 1) resolve contact: put particle at wall.
-                    this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL];  // 2a) undo velocity change:
-                    this.s2[j + PART_XVEL] *= this.drag;	            // 2b) apply drag:
-                    // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
-                    // ATTENTION! VERY SUBTLE PROBLEM HERE!
-                    // need a velocity-sign test here that ensures the 'bounce' step will 
-                    // always send the ball outwards, away from its wall or floor collision. 
-                    if (this.s2[j + PART_XVEL] < 0.0)
-                        this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL]; // need sign change--bounce!
-                    else
-                        this.s2[j + PART_XVEL] = this.resti * this.s2[j + PART_XVEL]; // sign changed-- don't need another.
-                }
-                //--------  right (+X) wall  --------------------------------------------
-                else if (this.s2[j + PART_XPOS] > 0.9) { // && this.s2[j + PART_XVEL] > 0.0) {	
-                    // collision!
-                    this.s2[j + PART_XPOS] = 0.9; // 1) resolve contact: put particle at wall.
-                    this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL];	// 2a) undo velocity change:
-                    this.s2[j + PART_XVEL] *= this.drag;			        // 2b) apply drag:
-                    // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
-                    // ATTENTION! VERY SUBTLE PROBLEM HERE! 
-                    // need a velocity-sign test here that ensures the 'bounce' step will 
-                    // always send the ball outwards, away from its wall or floor collision. 
-                    if (this.s2[j + PART_XVEL] > 0.0)
-                        this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL]; // need sign change--bounce!
-                    else
-                        this.s2[j + PART_XVEL] = this.resti * this.s2[j + PART_XVEL];	// sign changed-- don't need another.
-                }
-                //--------  floor (-Y) wall  --------------------------------------------  		
-                if (this.s2[j + PART_YPOS] < -0.9) { // && this.s2[j + PART_YVEL] < 0.0) {		
-                    // collision! floor...  
-                    this.s2[j + PART_YPOS] = -0.9;// 1) resolve contact: put particle at wall.
-                    this.s2[j + PART_YVEL] = this.s1[j + PART_YVEL];	// 2a) undo velocity change:
-                    this.s2[j + PART_YVEL] *= this.drag;		          // 2b) apply drag:	
-                    // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
-                    // ATTENTION! VERY SUBTLE PROBLEM HERE!
-                    // need a velocity-sign test here that ensures the 'bounce' step will 
-                    // always send the ball outwards, away from its wall or floor collision.
-                    if (this.s2[j + PART_YVEL] < 0.0)
-                        this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL]; // need sign change--bounce!
-                    else
-                        this.s2[j + PART_YVEL] = this.resti * this.s2[j + PART_YVEL];	// sign changed-- don't need another.
-                }
-                //--------  ceiling (+Y) wall  ------------------------------------------
-                else if (this.s2[j + PART_YPOS] > 0.9) { // && this.s2[j + PART_YVEL] > 0.0) {
-                    // collision! ceiling...
-                    this.s2[j + PART_YPOS] = 0.9;// 1) resolve contact: put particle at wall.
-                    this.s2[j + PART_YVEL] = this.s1[j + PART_YVEL];	// 2a) undo velocity change:
-                    this.s2[j + PART_YVEL] *= this.drag;			        // 2b) apply drag:
-                    // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
-                    // ATTENTION! VERY SUBTLE PROBLEM HERE!
-                    // need a velocity-sign test here that ensures the 'bounce' step will 
-                    // always send the ball outwards, away from its wall or floor collision.
-                    if (this.s2[j + PART_YVEL] > 0.0)
-                        this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL]; // need sign change--bounce!
-                    else
-                        this.s2[j + PART_YVEL] = this.resti * this.s2[j + PART_YVEL];	// sign changed-- don't need another.
-                }
-                //--------  near (-Z) wall  --------------------------------------------- 
-                if (this.s2[j + PART_ZPOS] < -0.9) { // && this.s2[j + PART_ZVEL] < 0.0 ) {
-                    // collision! 
-                    this.s2[j + PART_ZPOS] = -0.9;// 1) resolve contact: put particle at wall.
-                    this.s2[j + PART_ZVEL] = this.s1[j + PART_ZVEL];  // 2a) undo velocity change:
-                    this.s2[j + PART_ZVEL] *= this.drag;			        // 2b) apply drag:
-                    // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
-                    // ATTENTION! VERY SUBTLE PROBLEM HERE! ------------------------------
-                    // need a velocity-sign test here that ensures the 'bounce' step will 
-                    // always send the ball outwards, away from its wall or floor collision. 
-                    if (this.s2[j + PART_ZVEL] < 0.0)
-                        this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL]; // need sign change--bounce!
-                    else
-                        this.s2[j + PART_ZVEL] = this.resti * this.s2[j + PART_ZVEL];	// sign changed-- don't need another.
-                }
-                //--------  far (+Z) wall  ---------------------------------------------- 
-                else if (this.s2[j + PART_ZPOS] > 0.9) { // && this.s2[j + PART_ZVEL] > 0.0) {	
-                    // collision! 
-                    this.s2[j + PART_ZPOS] = 0.9; // 1) resolve contact: put particle at wall.
-                    this.s2[j + PART_ZVEL] = this.s1[j + PART_ZVEL];  // 2a) undo velocity change:
-                    this.s2[j + PART_ZVEL] *= this.drag;			        // 2b) apply drag:
+                break;
+            case LIM_COLLISION:
+                const PARTICLE_RAD = 0.04;
+                //neighbors pile up
+                let maxCount = Math.log(this.partCount)*3;
+                if (Math.min.apply(Math,this.floorstate) != 0) { //there exist -1 in the floorstate
+                    for (let i = 0; i < this.partCount; i++) {
+                        let steps1 = 0;
+                        let steps2 = 0;
+                        let neighbors = findNeighbors(this.s2, i, PARTICLE_RAD);
+                        // console.log(this.floorstate)
+                        if (neighbors.length > 0) {
+                            let neighborCenter = findCentroidIdxBased(this.s2, neighbors);
+                            let dx = this.s2[i * PART_MAXVAR + PART_XPOS] - neighborCenter[0];
+                            let dy = this.s2[i * PART_MAXVAR + PART_YPOS] - neighborCenter[1];
+                            let dz = this.s2[i * PART_MAXVAR + PART_ZPOS] - neighborCenter[2];
+                            // let dir = maxDirection(dx, dy, dz);
+                            // while (neighbors.length > 0 && steps1 < maxCount && !isReachFloor(this.floorstate, neighbors)) {
+                            //     this.s2[i * PART_MAXVAR + PART_YPOS] += PARTICLE_RAD;
+                            //     neighbors = findNeighbors(this.s2, i, PARTICLE_RAD);
+                            //     steps1++;
+                            // }
+                            // let tmp = this.s2.map(a => ({...a}));
+                            while(neighbors.length > 0 && steps2 < maxCount 
+                                && (isReachFloor(this.floorstate, neighbors) || this.s2[i * PART_MAXVAR + PART_YPOS] < maxCount/3*PARTICLE_RAD)){
+                                steps2 ++;
+                                this.s2[i * PART_MAXVAR + PART_YPOS] += PARTICLE_RAD;
+                                neighbors = findNeighbors(this.s2, i, PARTICLE_RAD);
+                                this.accumulated[i] = steps2 * PARTICLE_RAD*0.5;
+                            }
+                            // this.s2[i * PART_MAXVAR + PART_YPOS] = tmp.map(a => ({...a}));
+                            // this.s2[i*PART_MAXVAR + PART_ZVEL] += 1*dz;
+                            // this.s2[i*PART_MAXVAR + PART_XVEL] += 1*dx;
+                            // this.s2[i * PART_MAXVAR + PART_XVEL] += 1 * dx;
+                            // this.s2[i * PART_MAXVAR + PART_YVEL] += 0.4 * dy;
+                            // this.s2[i * PART_MAXVAR + PART_ZVEL] += 1 * dz;
+                            // neighbors = findNeighbors(this.s2, i, PARTICLE_RAD);
+                            // console.log(neighbors)
 
-                    if (this.s2[j + PART_ZVEL] > 0.0)
-                        this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL]; // need sign change--bounce!
-                    else
-                        this.s2[j + PART_ZVEL] = this.resti * this.s2[j + PART_ZVEL];	// sign changed-- don't need another.
-                } // end of (+Z) wall constraint
-            } // end of for-loop for all particles
-            break;
-        default:
-            console.log('?!?! unknown constraint: PartSys.constraintType==' + this.constraintType);
-            break;
+                        } else if (isReachFloor(this.floorstate, neighbors)) {
+                            this.floorstate[i] = 0;
+                        }
+                    }
+                }
+                break;
+            case LIM_CYLINDER:
+                for (let i = 0; i < this.partCount; i++) {
+                    //cylinder wall constraint
+                    if (Math.sqrt(Math.pow(this.s2[i * PART_MAXVAR + PART_XPOS], 2) + Math.pow(this.s2[i * PART_MAXVAR + PART_ZPOS], 2)) >= this.CYLINDAR_RAD) {
+                        this.s2[i * PART_MAXVAR + PART_XVEL] = 0;
+                        this.s2[i * PART_MAXVAR + PART_ZVEL] = 0;
+                        this.s2[i * PART_MAXVAR + PART_XPOS] = this.s1[i * PART_MAXVAR + PART_XPOS];
+                        this.s2[i * PART_MAXVAR + PART_ZPOS] = this.s1[i * PART_MAXVAR + PART_ZPOS];
+                        this.s2[i * PART_MAXVAR + PART_X_FTOT] = 0;
+                        this.s2[i * PART_MAXVAR + PART_Z_FTOT] = 0;
+                    }
+                }
+                break;
+            case LIM_FIXEDPT: //fix two point of a cloth
+                let fixedIdxArray = [0, this.clothWidth - 1]; //range from 0 to this.partCount-1
+                for (let i = 0; i < fixedIdxArray.length; i++) {
+                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_XPOS] = fixedIdxArray[i] % this.clothWidth * this.spacing;
+                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_YPOS] = -1 * Math.floor(fixedIdxArray[i] / this.clothWidth) * this.spacing;
+                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_ZPOS] = 0.0;
+                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_R] = 1.0;
+                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_G] = 1.0;
+                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_B] = 1.0;
+                }
+                break;
+            case LIM_ANCHOR: // Keep specified particle(s) at world-space location
+                var j = 0;
+                // let centroid = findCentroid(this.s2);
+                for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                    if (eucDistIndv(0, 0, 0,
+                        this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]
+                    ) >= BOID_RAD) {
+                        // console.log(this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]);
+                        this.s2[j + PART_XPOS] += (this.s2[j + PART_XPOS] < 0) ? 1 : -1 * BOUNCE_STEP; //FIXME: map to the surface of the sphere
+                        this.s2[j + PART_YPOS] += (this.s2[j + PART_YPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
+                        this.s2[j + PART_ZPOS] += (this.s2[j + PART_ZPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
+                        this.s2[j + PART_XVEL] *= -BOID_BOUNCE;
+                        this.s2[j + PART_YVEL] *= -BOID_BOUNCE;
+                        this.s2[j + PART_ZVEL] *= -BOID_BOUNCE;
+                    }
+                }
+                break;
+            case CONS_FIRE:
+                var j = 0;  // i==particle number; j==array index for i-th particle
+                for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                    this.s2[j + PART_AGE] -= 1;     // decrement lifetime.
+                    if (this.s2[j + PART_AGE] <= 0) { // End of life: RESET this particle!
+                        this.roundRand();
+                        this.s2[j + PART_XPOS] = -0.0 + 0.1 * this.randX;
+                        this.s2[j + PART_YPOS] = -1.0;
+                        this.s2[j + PART_ZPOS] = -0.0 + 0.1 * this.randZ;
+                        this.s2[j + PART_WPOS] = 1.0;
+                        this.roundRand();
+                        this.s2[j + PART_XVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randX);
+                        this.s2[j + PART_YVEL] = this.INIT_VEL * (0.3 + 0.3 * this.randY);
+                        this.s2[j + PART_ZVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randZ);
+                        this.s2[j + PART_MASS] = 1.0;      // mass, in kg.
+                        this.s2[j + PART_DIAM] = 40 * Math.random(); // on-screen diameter, in pixels
+                        this.s2[j + PART_RENDMODE] = 0.0;
+                        this.s2[j + PART_AGE] = 10 + 100 * Math.random();
+                    } // if age <=0
+                }
+            case CONS_BOUNCYBALL0:
+                var j = 0;  // i==particle number; j==array index for i-th particle
+                for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                    // simple velocity-reversal: 
+                    if (this.s2[j + PART_XPOS] < -0.9 && this.s2[j + PART_XVEL] < 0.0) {
+                        // bounce on left (-X) wall
+                        this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL];
+                    }
+                    else if (this.s2[j + PART_XPOS] > 0.9 && this.s2[j + PART_XVEL] > 0.0) {
+                        // bounce on right (+X) wall
+                        this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL];
+                    } //---------------------------
+                    if (this.s2[j + PART_YPOS] < -0.9 && this.s2[j + PART_YVEL] < 0.0) {
+                        // bounce on floor (-Y)
+                        this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL];
+                    }
+                    else if (this.s2[j + PART_YPOS] > 0.9 && this.s2[j + PART_YVEL] > 0.0) {
+                        // bounce on ceiling (+Y)
+                        this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL];
+                    } //---------------------------
+                    if (this.s2[j + PART_ZPOS] < -0.9 && this.s2[j + PART_ZVEL] < 0.0) {
+                        // bounce on near wall (-Z)
+                        this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL];
+                    }
+                    else if (this.s2[j + PART_ZPOS] > 0.9 && this.s2[j + PART_ZVEL] > 0.0) {
+                        // bounce on far wall (+Z)
+                        this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL];
+                    }
+                    //--------------------------
+                    // The above constraints change ONLY the velocity; nothing explicitly
+                    // forces the bouncy-ball to stay within the walls. If we begin with a
+                    // bouncy-ball on floor with zero velocity, gravity will cause it to 'fall' 
+                    // through the floor during the next timestep.  At the end of that timestep
+                    // our velocity-only constraint will scale velocity by -this.resti, but its
+                    // position is still below the floor!  Worse, the resti-weakened upward 
+                    // velocity will get cancelled by the new downward velocity added by gravity 
+                    // during the NEXT time-step. This gives the ball a net downwards velocity 
+                    // again, which again gets multiplied by -this.resti to make a slight upwards
+                    // velocity, but with the ball even further below the floor. As this cycle
+                    // repeats, the ball slowly sinks further and further downwards.
+                    // THUS the floor needs this position-enforcing constraint as well:
+                    if (this.s2[j + PART_YPOS] < -0.9) this.s2[j + PART_YPOS] = -0.9;
+                    else if (this.s2[j + PART_YPOS] > 0.9) this.s2[j + PART_YPOS] = 0.9; // ceiling
+                    if (this.s2[j + PART_XPOS] < -0.9) this.s2[j + PART_XPOS] = -0.9; // left wall
+                    else if (this.s2[j + PART_XPOS] > 0.9) this.s2[j + PART_XPOS] = 0.9; // right wall
+                    if (this.s2[j + PART_ZPOS] < -0.9) this.s2[j + PART_ZPOS] = -0.9; // near wall
+                    else if (this.s2[j + PART_ZPOS] > 0.9) this.s2[j + PART_ZPOS] = 0.9; // far wall
+                    // Our simple 'bouncy-ball' particle system needs this position-limiting
+                    // constraint ONLY for the floor and not the walls, as no forces exist that
+                    // could 'push' a zero-velocity particle against the wall. But suppose we
+                    // have a 'blowing wind' force that pushes particles left or right? Any
+                    // particle that comes to rest against our left or right wall could be
+                    // slowly 'pushed' through that wall as well -- THUS we need position-limiting
+                    // constraints for ALL the walls:
+                } // end of for-loop thru all particles
+                break;
+            case CONS_BOUNCYBALL1:
+                var j = 0;  // i==particle number; j==array index for i-th particle
+                for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
+                    //--------  left (-X) wall  ----------
+                    if (this.s2[j + PART_XPOS] < -0.9) {// && this.s2[j + PART_XVEL] < 0.0 ) {
+                        // collision!
+                        this.s2[j + PART_XPOS] = -0.9;// 1) resolve contact: put particle at wall.
+                        this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL];  // 2a) undo velocity change:
+                        this.s2[j + PART_XVEL] *= this.drag;	            // 2b) apply drag:
+                        // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
+                        // ATTENTION! VERY SUBTLE PROBLEM HERE!
+                        // need a velocity-sign test here that ensures the 'bounce' step will 
+                        // always send the ball outwards, away from its wall or floor collision. 
+                        if (this.s2[j + PART_XVEL] < 0.0)
+                            this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL]; // need sign change--bounce!
+                        else
+                            this.s2[j + PART_XVEL] = this.resti * this.s2[j + PART_XVEL]; // sign changed-- don't need another.
+                    }
+                    //--------  right (+X) wall  --------------------------------------------
+                    else if (this.s2[j + PART_XPOS] > 0.9) { // && this.s2[j + PART_XVEL] > 0.0) {	
+                        // collision!
+                        this.s2[j + PART_XPOS] = 0.9; // 1) resolve contact: put particle at wall.
+                        this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL];	// 2a) undo velocity change:
+                        this.s2[j + PART_XVEL] *= this.drag;			        // 2b) apply drag:
+                        // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
+                        // ATTENTION! VERY SUBTLE PROBLEM HERE! 
+                        // need a velocity-sign test here that ensures the 'bounce' step will 
+                        // always send the ball outwards, away from its wall or floor collision. 
+                        if (this.s2[j + PART_XVEL] > 0.0)
+                            this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL]; // need sign change--bounce!
+                        else
+                            this.s2[j + PART_XVEL] = this.resti * this.s2[j + PART_XVEL];	// sign changed-- don't need another.
+                    }
+                    //--------  floor (-Y) wall  --------------------------------------------  		
+                    if (this.s2[j + PART_YPOS] < -0.9) { // && this.s2[j + PART_YVEL] < 0.0) {		
+                        // collision! floor...  
+                        this.s2[j + PART_YPOS] = -0.9;// 1) resolve contact: put particle at wall.
+                        this.s2[j + PART_YVEL] = this.s1[j + PART_YVEL];	// 2a) undo velocity change:
+                        this.s2[j + PART_YVEL] *= this.drag;		          // 2b) apply drag:	
+                        // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
+                        // ATTENTION! VERY SUBTLE PROBLEM HERE!
+                        // need a velocity-sign test here that ensures the 'bounce' step will 
+                        // always send the ball outwards, away from its wall or floor collision.
+                        if (this.s2[j + PART_YVEL] < 0.0)
+                            this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL]; // need sign change--bounce!
+                        else
+                            this.s2[j + PART_YVEL] = this.resti * this.s2[j + PART_YVEL];	// sign changed-- don't need another.
+                    }
+                    //--------  ceiling (+Y) wall  ------------------------------------------
+                    else if (this.s2[j + PART_YPOS] > 0.9) { // && this.s2[j + PART_YVEL] > 0.0) {
+                        // collision! ceiling...
+                        this.s2[j + PART_YPOS] = 0.9;// 1) resolve contact: put particle at wall.
+                        this.s2[j + PART_YVEL] = this.s1[j + PART_YVEL];	// 2a) undo velocity change:
+                        this.s2[j + PART_YVEL] *= this.drag;			        // 2b) apply drag:
+                        // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
+                        // ATTENTION! VERY SUBTLE PROBLEM HERE!
+                        // need a velocity-sign test here that ensures the 'bounce' step will 
+                        // always send the ball outwards, away from its wall or floor collision.
+                        if (this.s2[j + PART_YVEL] > 0.0)
+                            this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL]; // need sign change--bounce!
+                        else
+                            this.s2[j + PART_YVEL] = this.resti * this.s2[j + PART_YVEL];	// sign changed-- don't need another.
+                    }
+                    //--------  near (-Z) wall  --------------------------------------------- 
+                    if (this.s2[j + PART_ZPOS] < -0.9) { // && this.s2[j + PART_ZVEL] < 0.0 ) {
+                        // collision! 
+                        this.s2[j + PART_ZPOS] = -0.9;// 1) resolve contact: put particle at wall.
+                        this.s2[j + PART_ZVEL] = this.s1[j + PART_ZVEL];  // 2a) undo velocity change:
+                        this.s2[j + PART_ZVEL] *= this.drag;			        // 2b) apply drag:
+                        // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
+                        // ATTENTION! VERY SUBTLE PROBLEM HERE! ------------------------------
+                        // need a velocity-sign test here that ensures the 'bounce' step will 
+                        // always send the ball outwards, away from its wall or floor collision. 
+                        if (this.s2[j + PART_ZVEL] < 0.0)
+                            this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL]; // need sign change--bounce!
+                        else
+                            this.s2[j + PART_ZVEL] = this.resti * this.s2[j + PART_ZVEL];	// sign changed-- don't need another.
+                    }
+                    //--------  far (+Z) wall  ---------------------------------------------- 
+                    else if (this.s2[j + PART_ZPOS] > 0.9) { // && this.s2[j + PART_ZVEL] > 0.0) {	
+                        // collision! 
+                        this.s2[j + PART_ZPOS] = 0.9; // 1) resolve contact: put particle at wall.
+                        this.s2[j + PART_ZVEL] = this.s1[j + PART_ZVEL];  // 2a) undo velocity change:
+                        this.s2[j + PART_ZVEL] *= this.drag;			        // 2b) apply drag:
+
+                        if (this.s2[j + PART_ZVEL] > 0.0)
+                            this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL]; // need sign change--bounce!
+                        else
+                            this.s2[j + PART_ZVEL] = this.resti * this.s2[j + PART_ZVEL];	// sign changed-- don't need another.
+                    } // end of (+Z) wall constraint
+                } // end of for-loop for all particles
+                break;
+            default:
+                console.log('?!?! unknown constraint: PartSys.constraintType==' + curLim.limitType);
+                break;
+        }
     }
 
 }
@@ -1434,10 +1662,7 @@ PartSys.prototype.swap = function () {
 PartSys.prototype.perlinNoise = function () {
     /*
     https://adrianb.io/2014/08/09/perlinnoise.html
-    https://github.com/josephg/noisejs
     */
-    console.log(perlin3(this.randX, this.randY, this.randZ));
-
 }
 
 PartSys.prototype.roundRand = function () {

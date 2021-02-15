@@ -119,7 +119,12 @@ const LIM_PULLEY  =15;    // Keep constant sum-of-distances for 3 particles
                           // A,B,Pivot:  ||A-Pivot||+||B-Pivot|| = dmax.
 const LIM_MAXVAR  =16;    // Max number of possible limitType values available.
 
-const LIM_FIXEDPT = 17; //keep two point of particle (cloth fixed)
+
+const LIM_COLLISION = 17;
+
+const LIM_FLOOR = 18;
+const LIM_CYLINDER = 19;
+const LIM_FIXEDPT = 20; //keep two point of particle (cloth fixed)
 //=============================================================================
 //==============================================================================
 function CLimit() {
@@ -156,6 +161,8 @@ function CLimit() {
                                   // axes to 'pose' axes where we define 'wall'
                                   // and other non-axis-aligned constraints.
   this.radius = 1.0;        // hard/solid particle size imposed by by LIM_RADIUS
+
+  this.floorPos = 0.0;
 }
 
 CLimit.prototype.printMe = function(opt_src) {

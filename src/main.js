@@ -22,22 +22,24 @@ References: besides the inline links in index.html, the code is modified from
     Done: mass-spring like linked systems with interactions (cloth-like)
     Done: boid constraint+control
     Done:  limit particle in shapes[box, sphere]
-    * Almost: onscreen instructions
-    * Almost: boid sphere boundary calculation mapping
-    * Almost[0.5d]: fire🔥 with noise/transparency/texture
-    * Almost: cloth with wind/mouse drag
+    Done: fire🔥 
     
-    ? Doing: add transparency/texture to fire 
-    ? Doing[2d]: fluids
+    ? Doing[Sat]: Tornado basics
+    ? Doing[Sat]: Tornado Cylinder 
+    ? Doing[Sun]: boid evasion
+    ? Doing[Sun]: boid boundary handling
+    ? Doing[Mon]: wind on cloth & fire
+    ? Doing[Mon]: mouse drag on cloth/obj
+    ? Doing[Mon]: refine onscreen instruction 
+    ? Doing[Mon]: remove useless term in dat.gui & useless keyboard response like R/f & console logs
 
-    Todo[1d]: limit particle in shapes[cylinder]
-    Todo[2d]: tornados within cylinder [300+]
-    Todo[1d+]: cohesive
+    TODO more textures refer to grading sheet 
+    TODO fluids
 
     Note: 
         console.log(JSON.parse(JSON.stringify(g_particleArray[index].s1)));
     🐞 FIXME: 
-    ! need testing
+    ! need testing 
 */
 
 "use strict"
@@ -53,7 +55,7 @@ var g_timeStep = 1000.0 / 60.0;			// current timestep in milliseconds (init to 1
 var g_timeStepMin = g_timeStep;   //holds min,max timestep values since last keypress.
 var g_timeStepMax = g_timeStep;
 
-var g_particleNum = 6;
+var g_particleNum = 7;
 var g_particleArray = [];
 
 function reset() {
@@ -102,29 +104,35 @@ function initVBOs(currScheme) {
     particle2.initShader(particleVert, particleFrag);
     g_particleArray[BOUNCYBALL] = particle2;
 
-    globalThis.SPRINGMASS = 2;
+    globalThis.SPRINGMASS = 2; //Remember to update g_particleNum
     var particle3 = new PartSys();
     particle3.initSpring(2);
     particle3.initShader(particleVert, particleFrag_square);
     g_particleArray[SPRINGMASS] = particle3;
 
-    globalThis.FIRE = 3;
+    globalThis.FIRE = 3; //Remember to update g_particleNum
     var particle3 = new PartSys();
     particle3.initFire(600);
     particle3.initShader(particleVert, particleFrag);
     g_particleArray[FIRE] = particle3;
 
-    globalThis.BOID = 4;
+    globalThis.BOID = 4; //Remember to update g_particleNum
     var particle4 = new PartSys();
     particle4.initBoid(20);
     particle4.initShader(particleVert, particleFrag_square);
     g_particleArray[BOID] = particle4;
 
-    globalThis.CLOTH = 5;
+    globalThis.CLOTH = 5; //Remember to update g_particleNum
     var particle5 = new PartSys();
     particle5.initCloth(Math.floor(params.ClothWidth), Math.floor(params.ClothHeight), params.ClothSpacing);  //width, height, spacing
     particle5.initShader(particleVert, particleFrag_square);
     g_particleArray[CLOTH] = particle5;
+
+    globalThis.TORNADO = 6; //Remember to update g_particleNum
+    var particle6 = new PartSys();
+    particle6.initSand(600);  
+    particle6.initShader(particleVert, particleFrag);
+    g_particleArray[TORNADO] = particle6;
 
     g_vboArray = [grid, plane, sphere_test, sphere];
 }
@@ -413,14 +421,14 @@ var particleVert =
     '  gl_PointSize = a_ptSize;\n' +
     '  gl_Position = u_MvpMatrix * a_Position; \n' +
     '  if(u_runMode == 0) { \n' +
-    '	   v_Color = vec4(1.0, 0.0, 0.0, 1.0);	\n' + //color already assigned here		// red: 0==reset
+    '	   v_Color = vec4(0.3, 0.8, 0.3, 1.0);	\n' + //color already assigned here		// red: 0==reset
     '  	 } \n' +
-    '  else if(u_runMode == 1) {  \n' +
-    '    v_Color = vec4(0.6, 0.6, 0.0, 1.0); \n' +	// yellow: 1==pause
-    '    }  \n' +
-    '  else if(u_runMode == 2) { \n' +
-    '    v_Color = vec4(0.3, 0.8, 0.3, 1.0); \n' +	// white: 2==step
-    '    } \n' +
+    // '  else if(u_runMode == 1) {  \n' +
+    // '    v_Color = vec4(0.6, 0.6, 0.0, 1.0); \n' +	// yellow: 1==pause
+    // '    }  \n' +
+    // '  else if(u_runMode == 2) { \n' +
+    // '    v_Color = vec4(0.3, 0.8, 0.3, 1.0); \n' +	// white: 2==step
+    // '    } \n' +
     '  else { \n' +
     '    v_Color = a_Color; \n' +	// green: >3==run
     '		 } \n' +
