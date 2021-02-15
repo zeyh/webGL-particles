@@ -827,7 +827,6 @@ var g_mousePosY_curr;
                 // console.log("increment",0.7 * g_speed * Math.sin(dx+Math.PI), 0.5 * g_speed * Math.sin(dy))
                 // console.log("look at:",g_LookX, g_LookY, g_LookZ);
                 if (g_prevDx && g_prevDy && g_prevDx != 0 && g_prevDy != 0) {
-                    console.log(g_prevDx, g_prevDy)
                     g_dx += g_prevDx;
                     g_dy += g_prevDy;
                 }

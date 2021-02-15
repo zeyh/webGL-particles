@@ -47,7 +47,7 @@ function drawAll([grid, plane, sphere_test, sphere]) {
 
     // particle flying boids
     pushMatrix(g_modelMatrix);
-    g_modelMatrix.setTranslate(0, 2.2, 1);
+    g_modelMatrix.setTranslate(0, 3.2, 1);
     drawParticle(BOID, g_modelMatrix, g_viewProjMatrix);
     g_modelMatrix = popMatrix();
     pushMatrix(g_modelMatrix);

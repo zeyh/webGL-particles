@@ -23,9 +23,9 @@ References: besides the inline links in index.html, the code is modified from
     Done: boid constraint+control
     Done:  limit particle in shapes[box, sphere]
     Done: fire🔥 
+    Done: sand init
+    Done: cylinder-base constraint
     
-    ? Doing[Sat]: Tornado basics
-    ? Doing[Sat]: Tornado Cylinder 
     ? Doing[Sun]: boid evasion
     ? Doing[Sun]: boid boundary handling
     ? Doing[Mon]: wind on cloth & fire
@@ -93,14 +93,14 @@ function initVBOs(currScheme) {
 
     globalThis.TEST = 0;
     var particle1 = new PartSys();
-    particle1.initBouncy3D(100);
+    particle1.initBouncy3D(1);
     particle1.initShader(particleVert, particleFrag);
     g_particleArray[TEST] = particle1;
 
 
     globalThis.BOUNCYBALL = 1;
     var particle2 = new PartSys();
-    particle2.initBouncy3D(600);
+    particle2.initBouncy3D(1);
     particle2.initShader(particleVert, particleFrag);
     g_particleArray[BOUNCYBALL] = particle2;
 
@@ -118,7 +118,7 @@ function initVBOs(currScheme) {
 
     globalThis.BOID = 4; //Remember to update g_particleNum
     var particle4 = new PartSys();
-    particle4.initBoid(20);
+    particle4.initBoid(50);
     particle4.initShader(particleVert, particleFrag_square);
     g_particleArray[BOID] = particle4;
 

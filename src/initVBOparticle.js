@@ -1461,16 +1461,26 @@ PartSys.prototype.doConstraints = function () {
                 var j = 0;
                 // let centroid = findCentroid(this.s2);
                 for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
-                    if (eucDistIndv(0, 0, 0,
-                        this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]
-                    ) >= BOID_RAD) {
-                        // console.log(this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]);
-                        this.s2[j + PART_XPOS] += (this.s2[j + PART_XPOS] < 0) ? 1 : -1 * BOUNCE_STEP; //FIXME: map to the surface of the sphere
-                        this.s2[j + PART_YPOS] += (this.s2[j + PART_YPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
-                        this.s2[j + PART_ZPOS] += (this.s2[j + PART_ZPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
-                        this.s2[j + PART_XVEL] *= -BOID_BOUNCE;
-                        this.s2[j + PART_YVEL] *= -BOID_BOUNCE;
-                        this.s2[j + PART_ZVEL] *= -BOID_BOUNCE;
+                    let dist = eucDistIndv(0, 0, 0,
+                        this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS] );
+                    if ( dist >= BOID_RAD) {
+                        let vec1 = [this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]];
+                        let vec2 = [this.s2[j + PART_XVEL], this.s2[j + PART_YVEL], this.s2[j + PART_ZVEL]];
+                        let crossProd = crossProduct3d(vec1, vec2);
+                        // this.s2[j + PART_XPOS] += (this.s2[j + PART_XPOS] < 0) ? 1 : -1 * BOUNCE_STEP; //FIXME: map to the surface of the sphere
+                        // this.s2[j + PART_YPOS] += (this.s2[j + PART_YPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
+                        // this.s2[j + PART_ZPOS] += (this.s2[j + PART_ZPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
+                        // console.log("!!", BOID_RAD / dist);
+                        this.s2[j + PART_XPOS] = this.s2[j + PART_XPOS] * Math.min(BOID_RAD / dist, 0.5);
+                        this.s2[j + PART_YPOS] = this.s2[j + PART_YPOS] * Math.min(BOID_RAD / dist, 0.5);
+                        this.s2[j + PART_ZPOS] = this.s2[j + PART_ZPOS] * Math.min(BOID_RAD / dist, 0.5);
+    
+                        this.s2[j + PART_XVEL] = -Math.min(params.BoidEvasion, 2)*Math.min(crossProd[0], 0.01);
+                        this.s2[j + PART_YVEL] = -Math.min(params.BoidEvasion, 2)*Math.min(crossProd[1], 0.01);
+                        this.s2[j + PART_ZVEL] = -Math.min(params.BoidEvasion, 2)*Math.min(crossProd[2], 0.01);
+                        // console.log(this.s2[j + PART_XVEL] ,
+                        //     this.s2[j + PART_YVEL],
+                        //     this.s2[j + PART_ZVEL] )
                     }
                 }
                 break;
@@ -1648,6 +1658,14 @@ PartSys.prototype.doConstraints = function () {
         }
     }
 
+}
+
+function crossProduct3d(a, b){ //return normalized cross product vector in 3d
+    let cross = [a[1]*b[2] - a[2]*b[1],
+    a[2]*b[0] - a[0]*b[2],
+    a[0]*b[1] - a[1]*b[0]];
+    let dist = eucDistIndv(0,0,0, cross[0], cross[1], cross[2]);
+    return [cross[0]/dist, cross[1]/dist, cross[2]/dist];
 }
 
 PartSys.prototype.swap = function () {
