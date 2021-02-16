@@ -25,9 +25,9 @@ References: besides the inline links in index.html, the code is modified from
     Done: fire🔥 
     Done: sand init
     Done: cylinder-base constraint
+    almost...: boid boundary handling
     
     ? Doing[Sun]: boid evasion
-    ? Doing[Sun]: boid boundary handling
     ? Doing[Mon]: wind on cloth & fire
     ? Doing[Mon]: mouse drag on cloth/obj
     ? Doing[Mon]: refine onscreen instruction 

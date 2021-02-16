@@ -109,11 +109,11 @@ function CForcer() {
     this.springEqualibrium = params.ClothRestLength;
 
     // ! Fire
-    this.fireMassDecay = params.fireMassDecay;
-    this.fireDiamDecay = params.fireDiamDecay;
-    this.fireRedDecay = params.fireRedDecay;
-    this.fireGreenDecay = params.fireBlueDecay;
-    this.fireBlueDecay = params.fireGreenDecay;
+    this.fireMassDecay = params.FireMassDecay;
+    this.fireDiamDecay = params.FireDiamDecay;
+    this.fireRedDecay = 1;
+    this.fireGreenDecay = 1;
+    this.fireBlueDecay = params.FireGreenDecay;
 
 }
 

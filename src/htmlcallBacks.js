@@ -202,7 +202,7 @@ var params = {
     BoidSeperation: 1.50, //CForcer kSep
     BoidAlignment: 0.50, //kVel
     BoidCohesion: 2.50, //kCen
-    BoidEvasion: 0.10, //kFly
+    BoidEvasion: 1.0, //kFly
     ClothWidth: 5,
     ClothHeight: 5,
     ClothSpacing: 0.2,
@@ -211,12 +211,13 @@ var params = {
     ClothBending: 0.01,  //kBend
     ClothRestLength: 0.10, //springEqualibrium
     DragForce: 0.15, //K_drag
-    fireMassDecay: 0.2,
-    fireDiamDecay: 1.5,
-    fireRedDecay: 0.0,
-    fireGreenDecay: 0.0,
-    fireBlueDecay: 2,
+    FireMassDecay: 0.2,
+    FireDiamDecay: 1.5,
+    FireBlueDecay: 0.8,
 };
+var boidBounceTxt = {
+    BoidBounceType: 'bounce1'
+}
 var params_fly = {
     turning_angle: 0.00,
     up_down: 0.00,
@@ -261,13 +262,26 @@ function setControlPanel() {
                 }
             }
         );
-        guiEva = gui.add(params, 'BoidEvasion', 0.00, 5.00).onChange(
+        globalThis.guiEva = gui.add(params, 'BoidEvasion', 0.00, 5.00).onChange(
             function (value) { //update findNeighbor criteria
                 for (let i = 0; i < g_particleArray[BOID].forceList.length; i++) {
                     g_particleArray[BOID].forceList[i].kFly = value;
                 }
             }
         );
+        let dropdown = gui.add(boidBounceTxt, 'BoidBounceType', { 
+            Individual: 'Individual', Group: 'Group'
+        } ).onChange(
+            function (value) { //update findNeighbor criteria
+                globalThis.isBounceBoid = true;
+                if(value == 'Individual'){
+                    isBounceBoid = true;
+                }else{
+                    isBounceBoid = false;
+                }
+            }
+        );;
+        dropdown.setValue("Individual");
         gui.add(params, 'ClothWidth', 3, 10).onChange(
             function (value) { //update findNeighbor criteria
                 let width = Math.floor(value);
@@ -329,14 +343,14 @@ function setControlPanel() {
                 }
             }
         );
-        gui.add(params, 'fireMassDecay', 0.01, 1.00).onChange(
+        gui.add(params, 'FireMassDecay', 0.01, 1.00).onChange(
             function (value) { //update findNeighbor criteria
                 for (let i = 0; i < g_particleArray[FIRE].forceList.length; i++) {
                     g_particleArray[FIRE].forceList[i].fireMassDecay = value;
                 }
             }
         );
-        gui.add(params, 'fireDiamDecay', 0.2, 3.00).onChange(
+        gui.add(params, 'FireDiamDecay', 0.2, 3.00).onChange(
             function (value) { //update findNeighbor criteria
                 for (let i = 0; i < g_particleArray[FIRE].forceList.length; i++) {
                     g_particleArray[FIRE].forceList[i].fireDiamDecay = value;
@@ -344,23 +358,7 @@ function setControlPanel() {
             }
         );
 
-        gui.add(params, 'fireRedDecay', 0.0, 2.00).onChange(
-            function (value) { //update findNeighbor criteria
-                // colorReset();
-                for (let i = 0; i < g_particleArray[FIRE].forceList.length; i++) {
-                    g_particleArray[FIRE].forceList[i].fireRedDecay = value;
-                }
-            }
-        );
-        gui.add(params, 'fireGreenDecay', 0.0, 2.00).onChange(
-            function (value) { //update findNeighbor criteria
-                // colorReset();
-                for (let i = 0; i < g_particleArray[FIRE].forceList.length; i++) {
-                    g_particleArray[FIRE].forceList[i].fireGreenDecay = value;
-                }
-            }
-        ); 
-        gui.add(params, 'fireBlueDecay', 0.0, 2.00).onChange(
+        gui.add(params, 'FireBlueDecay', 0.0, 2.00).onChange(
             function (value) { //update findNeighbor criteria
                 // colorReset();
                 for (let i = 0; i < g_particleArray[FIRE].forceList.length; i++) {
