@@ -313,9 +313,12 @@ PartSys.prototype.initCloth = function (width, height, spacing) {
         this.s1[j + PART_YPOS] = -1 * Math.floor(i / this.clothWidth) * this.spacing;
         this.s1[j + PART_ZPOS] = 0.0;
         this.s1[j + PART_WPOS] = 1.0;
-        this.s1[j + PART_R] = 0.2 + 1.0 * i % this.clothWidth / this.partCount;
-        this.s1[j + PART_G] = 0.5 + 1.0 * i % this.clothWidth / this.partCount;
-        this.s1[j + PART_B] = 0.4 + 2.0 * Math.floor(i / this.clothWidth) / this.partCount;
+        // this.s1[j + PART_R] = 0.2 + 1.0 * i % this.clothWidth / this.partCount;
+        // this.s1[j + PART_G] = 0.5 + 1.0 * i % this.clothWidth / this.partCount;
+        // this.s1[j + PART_B] = 0.4 + 2.0 * Math.floor(i / this.clothWidth) / this.partCount;
+        this.s1[j + PART_R] = 0.55 + 1.0 * i % this.clothWidth / this.partCount;
+        this.s1[j + PART_G] = 0.4 + 1.0 * i % this.clothWidth / this.partCount;
+        this.s1[j + PART_B] = 0.2 + 2.0 * Math.floor(i / this.clothWidth) / this.partCount;
         this.s1[j + PART_XVEL] = 0.0;
         this.s1[j + PART_YVEL] = 0.0;
         this.s1[j + PART_ZVEL] = 0.0;
@@ -402,9 +405,9 @@ PartSys.prototype.initBoid = function (count) {
         this.s1[j + PART_YPOS] = 0.0 + 1.0 * this.neighborRadius * this.randX;
         this.s1[j + PART_ZPOS] = 0.0 + 1.0 * this.neighborRadius * this.randZ;
         this.s1[j + PART_WPOS] = 1.0;
-        this.s1[j + PART_R] = 0.5;
-        this.s1[j + PART_G] = 0.7;
-        this.s1[j + PART_B] = 0.7 + Math.abs(this.randZ);
+        this.s1[j + PART_R] = 0.7 + Math.abs(this.randX*0.4);
+        this.s1[j + PART_G] = 0.7 + this.randY*0.4;
+        this.s1[j + PART_B] = 0.5 + this.randY*0.1;
         this.roundRand(); // * y'(0)
         this.s1[j + PART_XVEL] = this.INIT_VEL * (0.1 + 0.1 * this.randX);
         this.s1[j + PART_YVEL] = this.INIT_VEL * (0.0 + 0.03 * this.randY);
@@ -1537,9 +1540,9 @@ PartSys.prototype.doConstraints = function () {
                     this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_XPOS] = fixedIdxArray[i] % this.clothWidth * this.spacing;
                     this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_YPOS] = -1 * Math.floor(fixedIdxArray[i] / this.clothWidth) * this.spacing;
                     this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_ZPOS] = 0.0;
-                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_R] = 1.0;
-                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_G] = 1.0;
-                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_B] = 1.0;
+                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_R] = 0.7;
+                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_G] = 0.4;
+                    this.s2[fixedIdxArray[i] * PART_MAXVAR + PART_B] = 0.0;
                 }
                 break;
             case LIM_ANCHOR: // Keep specified particle(s) at world-space location

@@ -210,7 +210,7 @@ var params = {
     ClothSheering: 0.1, //kSheer
     ClothBending: 0.1,  //kBend
     ClothRestLength: 0.10, //springEqualibrium
-    ClothSpringConst: 500,
+    // ClothSpringConst: 500,
     DragForce: 0.12, //K_drag
     FireMassDecay: 0.2,
     FireDiamDecay: 1.5,
@@ -232,6 +232,7 @@ view.fly = false;
 var guiBoundary, guiNeighbor, guiSep, guiAli, guiCoh, guiEva;
 var guiArr_frustum, guiArr_fly;
 var gui = new dat.GUI();
+gui.close();
 function setControlPanel() {
     if (g_schemeOpt == 0) {
         guiBoundary = gui.add(params, 'BoidBoundarySize', 1.00, 10.00);
@@ -337,13 +338,13 @@ function setControlPanel() {
                 }
             }
         );
-        gui.add(params, 'ClothSpringConst', 10, 600).onChange(
-            function (value) { //update findNeighbor criteria
-                for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
-                    g_particleArray[CLOTH].forceList[i].K_spring = value;
-                }
-            }
-        );
+        // gui.add(params, 'ClothSpringConst', 10, 600).onChange(
+        //     function (value) { //update findNeighbor criteria
+        //         for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
+        //             g_particleArray[CLOTH].forceList[i].K_spring = value;
+        //         }
+        //     }
+        // );
         gui.add(params, 'DragForce', 0.01, 1.00).onChange(
             function (value) { //update findNeighbor criteria
                 for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
