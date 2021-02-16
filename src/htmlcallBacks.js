@@ -210,6 +210,7 @@ var params = {
     ClothSheering: 0.01, //kSheer
     ClothBending: 0.01,  //kBend
     ClothRestLength: 0.10, //springEqualibrium
+    ClothSpringConst: 500,
     DragForce: 0.15, //K_drag
     FireMassDecay: 0.2,
     FireDiamDecay: 1.5,
@@ -269,7 +270,7 @@ function setControlPanel() {
                 }
             }
         );
-        let dropdown = gui.add(boidBounceTxt, 'BoidBounceType', { 
+        globalThis.boidDropdown = gui.add(boidBounceTxt, 'BoidBounceType', { 
             Individual: 'Individual', Group: 'Group'
         } ).onChange(
             function (value) { //update findNeighbor criteria
@@ -281,7 +282,7 @@ function setControlPanel() {
                 }
             }
         );;
-        dropdown.setValue("Individual");
+        boidDropdown.setValue("Individual");
         gui.add(params, 'ClothWidth', 3, 10).onChange(
             function (value) { //update findNeighbor criteria
                 let width = Math.floor(value);
@@ -333,6 +334,13 @@ function setControlPanel() {
             function (value) { //update findNeighbor criteria
                 for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
                     g_particleArray[CLOTH].forceList[i].springEqualibrium = value;
+                }
+            }
+        );
+        gui.add(params, 'ClothSpringConst', 10, 600).onChange(
+            function (value) { //update findNeighbor criteria
+                for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
+                    g_particleArray[CLOTH].forceList[i].K_spring = value;
                 }
             }
         );
@@ -719,7 +727,7 @@ function keyArrowRotateUp(ev) {//change x from -1 to 1
     } else { return; }
 }
 
-var g_matlSel = 18;
+var g_matlSel = 8;
 function materialKeyPress(ev) {
     switch (ev.keyCode) {
         case 77:	// UPPER-case 'M' key:
@@ -923,7 +931,6 @@ function myMouseMove(ev) {
     g_lamp0PosZ = 4.0 * (y - g_yMclik);
     g_eyePosY = 8.0 * (x - g_xMclik);
     g_eyePosZ = 8.0 * (y - g_yMclik);
-
 
     // find how far we dragged the mouse:
     g_xMdragTot += (x - g_xMclik);

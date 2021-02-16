@@ -25,13 +25,12 @@ References: besides the inline links in index.html, the code is modified from
     Done: fire🔥 
     Done: sand init
     Done: cylinder-base constraint
-    almost...: boid boundary handling
-    
-    ? Doing[Sun]: boid evasion
-    ? Doing[Mon]: wind on cloth & fire
-    ? Doing[Mon]: mouse drag on cloth/obj
-    ? Doing[Mon]: refine onscreen instruction 
-    ? Doing[Mon]: remove useless term in dat.gui & useless keyboard response like R/f & console logs
+    Done: boid boundary handling & boid evasion
+    Done: wind on cloth & fire + mouseDrag
+
+    ? Doing[Tues]: more on sand
+    ? Doing[Tues]: refine onscreen instruction 
+    ? Doing[Tues]: remove useless term in dat.gui & useless keyboard response like R/f & console logs
 
     TODO more textures refer to grading sheet 
     TODO fluids
@@ -63,6 +62,7 @@ function reset() {
         for (var i = 0; i < gui.__controllers.length; i++) {
             gui.__controllers[i].setValue(gui.__controllers[i].initialValue);
         }
+        boidDropdown.setValue("Individual");
     };
     resetSliders();
     initVBOs();
@@ -90,6 +90,9 @@ function initVBOs(currScheme) {
     sphere.init();
     var sphere_test = new VBO_genetic(currScheme[0], currScheme[1], sphere_vertices, sphere_colors, sphere_normals, sphere_indices, currScheme[2]);
     sphere_test.init();
+    var cube = new VBO_genetic(currScheme[0], currScheme[1], cube_vertices, cube_colors, cube_normals, cube_indices, currScheme[2]);
+    cube.init();
+    g_vboArray = [grid, plane, sphere_test, sphere, cube];
 
     globalThis.TEST = 0;
     var particle1 = new PartSys();
@@ -133,8 +136,6 @@ function initVBOs(currScheme) {
     particle6.initSand(600);  
     particle6.initShader(particleVert, particleFrag);
     g_particleArray[TORNADO] = particle6;
-
-    g_vboArray = [grid, plane, sphere_test, sphere];
 }
 function main() {
     console.log("I'm in main.js right now...");

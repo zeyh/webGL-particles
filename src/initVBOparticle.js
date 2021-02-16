@@ -145,7 +145,7 @@ PartSys.prototype.initSand = function (count) {
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR);
 
     this.INIT_VEL = 0.15 * 60.0;
-    this.runMode = 2;
+    this.runMode = 3;
     this.solvType = g_currSolverType;
     this.CYLINDAR_RAD = 1.8;
     //* initial conditions
@@ -266,6 +266,13 @@ PartSys.prototype.initCloth = function (width, height, spacing) {
     fTmp.partCount = -1;
     this.forceList.push(fTmp);
 
+    fTmp = new CForcer();
+    fTmp.forceType = F_WIND;
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
+
     var cTmp = new CLimit();
     cTmp.limitType = LIM_FIXEDPT;
     cTmp.partFirst = 0;
@@ -339,6 +346,12 @@ PartSys.prototype.initBoid = function (count) {
 
     fTmp = new CForcer();
     fTmp.forceType = F_FLY; //evation
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
+    fTmp = new CForcer();
+    fTmp.forceType = F_WIND;
     fTmp.targFirst = 0;
     fTmp.partCount = -1;
     this.forceList.push(fTmp);
@@ -493,6 +506,12 @@ PartSys.prototype.initFire = function (count) {
     fTmp.partCount = -1;            // (negative value means ALL particles and IGNORE all other Cforcer members...)
     this.forceList.push(fTmp);      // append this 'gravity' force object to 
 
+    fTmp = new CForcer();
+    fTmp.forceType = F_WIND;
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
+
     // ! Create & init all constraint-causing objects
     var cTmp = new CLimit();        // creat constraint-causing object, and
     cTmp.limitType = CONS_FIRE;       // confine particles inside axis-aligned 
@@ -546,9 +565,6 @@ PartSys.prototype.initSpring = function (count) {
     fTmp.forceType = F_SPRING;
     fTmp.e1 = 0;
     fTmp.e2 = 1;
-    fTmp.K_spring = 500.0;
-    fTmp.K_springDamp = 0.001;
-    fTmp.K_restLength = 0.5; //spring equalibrium
     fTmp.targFirst = 0;
     fTmp.partCount = -1;
     this.forceList.push(fTmp);
@@ -773,7 +789,7 @@ PartSys.prototype.applySpringForce = function (s, forceList, springConst, currId
         * (s[neighborIdx * PART_MAXVAR + PART_ZPOS] - s[currIdx * PART_MAXVAR + PART_ZPOS]) / eucDist;
 }
 
-PartSys.prototype.applyForces = function (s, fList) {
+PartSys.prototype.applyForces = function (s, fList, currType) {
     var j = 0;  // i==particle number; j==array index for i-th particle
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
         s[j + PART_X_FTOT] = 0.0;
@@ -865,8 +881,40 @@ PartSys.prototype.applyForces = function (s, fList) {
                     fList[k].forceType, "NOT YET IMPLEMENTED!!");
                 break;
             case F_WIND:      // Blowing-wind-like force-field; fcn of 3D position
-                console.log("PartSys.applyForces(), fList[", k, "].forceType:",
-                    fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                var j = m * PART_MAXVAR;  // state var array index for particle # m
+                let dx = 0; //(g_curMousePosX4Boid - canvas.width / 2) / canvas.width / 2;
+                let dy = 0; //(g_curMousePosY4Boid - canvas.height / 2) / canvas.height / 2;
+                let dz = 0;
+                if(g_isDrag){
+                    dx = g_xMdragTot;
+                    dy = g_yMdragTot;
+                }
+                
+                if(currType == CLOTH){
+                    dx *= 0.5;
+                    dy *= 0.5;
+                    // if(dx > 0){
+                    //     dx = Math.min(dx, 0.6);
+                    // }
+                    // else{
+                    //     dx = Math.max(dx, -0.6);
+                    // }
+                    // if(dy > 0){
+                    //     dy = Math.min(dy, 0.6);
+                    // }
+                    // else{
+                    //     dy = Math.max(dy, -0.6);
+                    // }
+                }   
+                if(currType == BOID){
+                    dx *= 10;
+                    dy *= 10;
+                } 
+                for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
+                    s[j + PART_X_FTOT] += dx;
+                    s[j + PART_Y_FTOT] += dy;
+                    s[j + PART_Z_FTOT] += dz;
+                }
                 break;
             case F_BUBBLE:    // Constant inward force (bub_force)to a 3D centerpoint 
                 // bub_ctr if particle is > bub_radius away from it.
@@ -991,29 +1039,32 @@ PartSys.prototype.applyForces = function (s, fList) {
                     }
                 }
                 break;
-            case F_FLY:    // Earth-gravity pulls 'downwards' as defined by downDir
+            case F_FLY:    // UNUSED - Implemented in constraints
                 var j = m * PART_MAXVAR;  // state var array index for particle # m
                 let VEL_THRESHOLD = 0.5;
-                let dir = flyingDir(findCentroid(s), [0,0,0], 0.2);
+                let dir = flyingDir(findCentroid(s), [0, 0, 0], 0.2);
                 for (; m < mmax; m++, j += PART_MAXVAR) {
-                    // // * for centroid of boids follow mouse FIXME: minus the centroid...
-                    // if (g_curMousePosX4Boid && g_curMousePosY4Boid) {
-                    //     let dx = (g_curMousePosX4Boid - canvas.width / 2) / canvas.width / 2;
-                    //     let dy = (g_curMousePosY4Boid - canvas.height / 2) / canvas.height / 2;
-                    //     // console.log(dx, dy);
-                    //     var j = m * PART_MAXVAR;  // state var array index for particle # m
-                    //     for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
-                    //         // force from gravity == mass * gravConst * downDirection
-                    //         s[j + PART_X_FTOT] += (fList[k].kFly) * dx;
-                    //         s[j + PART_Y_FTOT] += (fList[k].kFly) * dy;
-                    //         s[j + PART_Z_FTOT] += (fList[k].kFly) * dy;
-                    //     }
-                    // }
+                    // * for centroid of boids follow mouse FIXME: minus the centroid...
+                    if (g_curMousePosX4Boid && g_curMousePosY4Boid) {
+                        let dx = (g_curMousePosX4Boid - canvas.width / 2) / canvas.width / 2;
+                        let dy = (g_curMousePosY4Boid - canvas.height / 2) / canvas.height / 2;
+                        if(g_isDrag){
+                            dx = g_xMdragTot;
+                            dy = g_yMdragTot;
+                        }
+                        // console.log(dx, dy);
+                        var j = m * PART_MAXVAR;  // state var array index for particle # m
+                        for (; m < mmax; m++, j += PART_MAXVAR) { // for every particle# from m to mmax-1,
+                            // force from gravity == mass * gravConst * downDirection
+                            s[j + PART_X_FTOT] += (fList[k].kFly) * dx;
+                            s[j + PART_Y_FTOT] += (fList[k].kFly) * dy;
+                            s[j + PART_Z_FTOT] += (fList[k].kFly) * dy;
+                        }
+                    }
                     // * to let particles that near a region flying away
                     // s[j + PART_X_FTOT] += dir[0] * s[j + PART_MASS] * fList[k].kFly;
                     // s[j + PART_Y_FTOT] += dir[1] * s[j + PART_MASS] * fList[k].kFly;
                     // s[j + PART_Z_FTOT] += dir[2] * s[j + PART_MASS] * fList[k].kFly;
-
 
                     // * for particles that's not moving(VEL_THRESHOLD)... let it move randomly
                     // let randomSeed = Math.random();
@@ -1026,6 +1077,7 @@ PartSys.prototype.applyForces = function (s, fList) {
                     //     s[j + PART_Y_FTOT] += sign * s[j + PART_MASS] * fList[k].kFly;
                     //     s[j + PART_Z_FTOT] += sign * s[j + PART_MASS] * fList[k].kFly;
                     // }
+
                     // * for all particles move randomly
                     // s[j + PART_X_FTOT] += Math.random() * s[j + PART_MASS] * fList[k].kFly *
                     //     fList[k].flyDir.elements[0];
@@ -1034,7 +1086,6 @@ PartSys.prototype.applyForces = function (s, fList) {
                     // s[j + PART_Z_FTOT] += s[j + PART_MASS] * fList[k].kFly *
                     //     fList[k].flyDir.elements[2];
                 }
-                // console.log(s);
                 break;
             default:
                 console.log("!!!ApplyForces() fList[", k, "] invalid forceType:", fList[k].forceType);
@@ -1491,32 +1542,32 @@ PartSys.prototype.doConstraints = function () {
                         // this.s2[j + PART_XPOS] += (this.s2[j + PART_XPOS] < 0) ? 1 : -1 * BOUNCE_STEP; //FIXME: map to the surface of the sphere
                         // this.s2[j + PART_YPOS] += (this.s2[j + PART_YPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
                         // this.s2[j + PART_ZPOS] += (this.s2[j + PART_ZPOS] < 0) ? 1 : -1 * BOUNCE_STEP;
-                        
+
                         //normalize the positions of each point reached boundary
                         this.s2[j + PART_XPOS] = this.s2[j + PART_XPOS] * Math.max(BOID_RAD / dist, 0.5);
                         this.s2[j + PART_YPOS] = this.s2[j + PART_YPOS] * Math.max(BOID_RAD / dist, 0.5);
                         this.s2[j + PART_ZPOS] = this.s2[j + PART_ZPOS] * Math.max(BOID_RAD / dist, 0.5);
-                        let dir = flyingDir([this.s2[j + PART_XPOS], this.s2[j + PART_YPOS],this.s2[j + PART_ZPOS] ], [0,0,0], 0.3);
+                        let dir = flyingDir([this.s2[j + PART_XPOS], this.s2[j + PART_YPOS], this.s2[j + PART_ZPOS]], [0, 0, 0], 0.3);
 
-                         if(!isBounceBoid){
-                            this.s2[j + PART_XVEL] = dir[0] > 0 ? 1+dir[0] : -1+dir[0];
-                            this.s2[j + PART_YVEL] = dir[1] > 0 ? 1+dir[1] : -1+dir[1];
-                            this.s2[j + PART_ZVEL] = dir[2] > 0 ? 1+dir[2] : -1+dir[2];
-                            this.s2[j + PART_XVEL] += -this.s2[j + PART_XPOS]*params.BoidEvasion;
-                            this.s2[j + PART_YVEL] += -this.s2[j + PART_YPOS]*params.BoidEvasion;
-                            this.s2[j + PART_ZVEL] += -this.s2[j + PART_ZPOS]*params.BoidEvasion;
+                        if (!isBounceBoid) {
+                            this.s2[j + PART_XVEL] = dir[0] > 0 ? 1 + dir[0] : -1 + dir[0];
+                            this.s2[j + PART_YVEL] = dir[1] > 0 ? 1 + dir[1] : -1 + dir[1];
+                            this.s2[j + PART_ZVEL] = dir[2] > 0 ? 1 + dir[2] : -1 + dir[2];
+                            this.s2[j + PART_XVEL] += -this.s2[j + PART_XPOS] * params.BoidEvasion;
+                            this.s2[j + PART_YVEL] += -this.s2[j + PART_YPOS] * params.BoidEvasion;
+                            this.s2[j + PART_ZVEL] += -this.s2[j + PART_ZPOS] * params.BoidEvasion;
                         }
-                        else{
+                        else {
                             this.s2[j + PART_XVEL] = -Math.max(params.BoidEvasion, 1) * crossProd[0];
                             this.s2[j + PART_YVEL] = -Math.max(params.BoidEvasion, 1) * crossProd[1];
                             this.s2[j + PART_ZVEL] = -Math.max(params.BoidEvasion, 1) * crossProd[2];
-                            this.s2[j + PART_XVEL] += -this.s2[j + PART_XPOS]*params.BoidEvasion*0.6;
-                            this.s2[j + PART_YVEL] += -this.s2[j + PART_YPOS]*params.BoidEvasion*0.6;
-                            this.s2[j + PART_ZVEL] += -this.s2[j + PART_ZPOS]*params.BoidEvasion*0.6;
+                            this.s2[j + PART_XVEL] += -this.s2[j + PART_XPOS] * params.BoidEvasion * 0.6;
+                            this.s2[j + PART_YVEL] += -this.s2[j + PART_YPOS] * params.BoidEvasion * 0.6;
+                            this.s2[j + PART_ZVEL] += -this.s2[j + PART_ZPOS] * params.BoidEvasion * 0.6;
                         }
-                        
-                      
-                       
+
+
+
                     }
                 }
                 break;
@@ -1524,6 +1575,12 @@ PartSys.prototype.doConstraints = function () {
                 var j = 0;  // i==particle number; j==array index for i-th particle
                 for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
                     this.s2[j + PART_AGE] -= 1;     // decrement lifetime.
+                    let dx = 0;
+                    let dy = 0;
+                    if(g_isDrag){
+                        dx = g_xMdragTot;
+                        dy = g_yMdragTot;
+                    }
                     if (this.s2[j + PART_AGE] <= 0) { // End of life: RESET this particle!
                         this.roundRand();
                         this.s2[j + PART_XPOS] = -0.0 + 0.1 * this.randX;
@@ -1531,8 +1588,8 @@ PartSys.prototype.doConstraints = function () {
                         this.s2[j + PART_ZPOS] = -0.0 + 0.1 * this.randZ;
                         this.s2[j + PART_WPOS] = 1.0;
                         this.roundRand();
-                        this.s2[j + PART_XVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randX);
-                        this.s2[j + PART_YVEL] = this.INIT_VEL * (0.3 + 0.3 * this.randY);
+                        this.s2[j + PART_XVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randX + 0.5*dx);
+                        this.s2[j + PART_YVEL] = this.INIT_VEL * (0.3 + 0.3 * this.randY + 0.5*dy);
                         this.s2[j + PART_ZVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randZ);
                         this.s2[j + PART_MASS] = 1.0;      // mass, in kg.
                         this.s2[j + PART_DIAM] = 40 * Math.random(); // on-screen diameter, in pixels

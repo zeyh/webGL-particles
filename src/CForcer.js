@@ -95,8 +95,8 @@ function CForcer() {
     // ! F_SPRING Single Spring variables;........................................
     this.e1 = 0;               // Spring endpoints connect particle # e1 to # e2
     this.e2 = 1;               // (state vars hold particles 0,1,2,3,...partCount)
-    this.K_spring;             // Spring constant: force = stretchDistance*K_s
-    this.K_springDamp;         // Spring damping: (friction within the spring);
+    this.K_spring = params.ClothSpringConst;             // Spring constant: force = stretchDistance*K_s
+    this.K_springDamp = 0.001;;         // Spring damping: (friction within the spring);
     // force = -relVel*K_damp; 'relative velocity' is
     // how fast the spring length is changing, and
     // applied along the direction of the spring.
