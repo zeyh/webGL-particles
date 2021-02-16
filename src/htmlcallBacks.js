@@ -206,12 +206,12 @@ var params = {
     ClothWidth: 5,
     ClothHeight: 5,
     ClothSpacing: 0.2,
-    ClothStreching: 3.10,   //kStretch
-    ClothSheering: 0.01, //kSheer
-    ClothBending: 0.01,  //kBend
+    ClothStreching: 3.10, //kStretch
+    ClothSheering: 0.1, //kSheer
+    ClothBending: 0.1,  //kBend
     ClothRestLength: 0.10, //springEqualibrium
     ClothSpringConst: 500,
-    DragForce: 0.15, //K_drag
+    DragForce: 0.12, //K_drag
     FireMassDecay: 0.2,
     FireDiamDecay: 1.5,
     FireBlueDecay: 0.8,
@@ -433,7 +433,7 @@ function gridDisplay() {
     if (hideGrid) {
         //start
         hideGrid = false;
-        document.querySelector('#showGrid').textContent = 'Show Plane';
+        document.querySelector('#showGrid').textContent = 'Hide Grid';
     } else {
         hideGrid = true;
         document.querySelector('#showGrid').textContent = 'Show Grid';
@@ -531,78 +531,77 @@ function key123(ev) {
     }
     else if (ev.keyCode == 82) { //R for adding velocity
         if (ev.shiftKey == false) {   // 'r' key: SOFT reset; boost velocity only
-            console.log("r being pressed");
             g_particleArray[SPRINGMASS].s1[PART_XPOS] += 1;
             g_particleArray[SPRINGMASS].s1[PART_XPOS + PART_MAXVAR] -= 1;
             drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
 
-            if (this.g_currSolverType == SOLV_MIDPOINT
-                || this.g_currSolverType == SOLV_EULER
-                || this.g_currSolverType == SOLV_ADAMS_BASH
-                || this.g_currSolverType == SOLV_RUNGEKUTTA
-                || this.g_currSolverType == SOLV_BACK_EULER
-                || this.g_currSolverType == SOLV_VEL_VERLET
-            ) {
-                for (let index = 0; index < g_particleNum; index++) {
-                    g_particleArray[index].runMode = 3;  // RUN!
-                    if (index == SPRINGMASS) {
-                        g_particleArray[index].s1[PART_XPOS] += 0.5;
-                    }
-                    var j = 0; // array index for particle i
-                    for (var i = 0; i < g_particleArray[index].partCount; i += 1, j += PART_MAXVAR) {
-                        g_particleArray[index].roundRand();
-                        if (g_particleArray[index].s1[j + PART_XVEL] > 0.0) {
-                            g_particleArray[index].s1[j + PART_XVEL] += 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
-                        }
-                        else {
-                            g_particleArray[index].s1[j + PART_XVEL] -= 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
-                        }
+            // if (this.g_currSolverType == SOLV_MIDPOINT
+            //     || this.g_currSolverType == SOLV_EULER
+            //     || this.g_currSolverType == SOLV_ADAMS_BASH
+            //     || this.g_currSolverType == SOLV_RUNGEKUTTA
+            //     || this.g_currSolverType == SOLV_BACK_EULER
+            //     || this.g_currSolverType == SOLV_VEL_VERLET
+            // ) {
+            //     for (let index = 0; index < g_particleNum; index++) {
+            //         g_particleArray[index].runMode = 3;  // RUN!
+            //         if (index == SPRINGMASS) {
+            //             g_particleArray[index].s1[PART_XPOS] += 0.5;
+            //         }
+            //         var j = 0; // array index for particle i
+            //         for (var i = 0; i < g_particleArray[index].partCount; i += 1, j += PART_MAXVAR) {
+            //             g_particleArray[index].roundRand();
+            //             if (g_particleArray[index].s1[j + PART_XVEL] > 0.0) {
+            //                 g_particleArray[index].s1[j + PART_XVEL] += 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+            //             }
+            //             else {
+            //                 g_particleArray[index].s1[j + PART_XVEL] -= 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+            //             }
 
-                        if (g_particleArray[index].s1[j + PART_YVEL] > 0.0) {
-                            g_particleArray[index].s1[j + PART_YVEL] += 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
-                        }
-                        else {
-                            g_particleArray[index].s1[j + PART_YVEL] -= 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
-                        }
+            //             if (g_particleArray[index].s1[j + PART_YVEL] > 0.0) {
+            //                 g_particleArray[index].s1[j + PART_YVEL] += 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
+            //             }
+            //             else {
+            //                 g_particleArray[index].s1[j + PART_YVEL] -= 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
+            //             }
 
-                        if (g_particleArray[index].s1[j + PART_ZVEL] > 0.0) {
-                            g_particleArray[index].s1[j + PART_ZVEL] += 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
-                        }
-                        else {
-                            g_particleArray[index].s1[j + PART_ZVEL] -= 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
-                        }
-                    }
-                }
-            }
-            else {
-                for (let index = 0; index < g_particleNum; index++) {
-                    g_particleArray[index].runMode = 3;  // RUN!
-                    var j = 0; // array index for particle i
-                    for (var i = 0; i < g_particleArray[index].partCount; i += 1, j += PART_MAXVAR) {
-                        g_particleArray[index].roundRand();
-                        if (g_particleArray[index].s2[j + PART_XVEL] > 0.0) {
-                            g_particleArray[index].s2[j + PART_XVEL] += 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
-                        }
-                        else {
-                            g_particleArray[index].s2[j + PART_XVEL] -= 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
-                        }
+            //             if (g_particleArray[index].s1[j + PART_ZVEL] > 0.0) {
+            //                 g_particleArray[index].s1[j + PART_ZVEL] += 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+            //             }
+            //             else {
+            //                 g_particleArray[index].s1[j + PART_ZVEL] -= 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+            //             }
+            //         }
+            //     }
+            // }
+            // else {
+            //     for (let index = 0; index < g_particleNum; index++) {
+            //         g_particleArray[index].runMode = 3;  // RUN!
+            //         var j = 0; // array index for particle i
+            //         for (var i = 0; i < g_particleArray[index].partCount; i += 1, j += PART_MAXVAR) {
+            //             g_particleArray[index].roundRand();
+            //             if (g_particleArray[index].s2[j + PART_XVEL] > 0.0) {
+            //                 g_particleArray[index].s2[j + PART_XVEL] += 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+            //             }
+            //             else {
+            //                 g_particleArray[index].s2[j + PART_XVEL] -= 0.5 + 0.4 * g_particleArray[index].randX * g_particleArray[index].INIT_VEL;
+            //             }
 
-                        if (g_particleArray[index].s2[j + PART_YVEL] > 0.0) {
-                            g_particleArray[index].s2[j + PART_YVEL] += 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
-                        }
-                        else {
-                            g_particleArray[index].s2[j + PART_YVEL] -= 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
-                        }
+            //             if (g_particleArray[index].s2[j + PART_YVEL] > 0.0) {
+            //                 g_particleArray[index].s2[j + PART_YVEL] += 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
+            //             }
+            //             else {
+            //                 g_particleArray[index].s2[j + PART_YVEL] -= 1.7 + 0.4 * g_particleArray[index].randY * g_particleArray[index].INIT_VEL;
+            //             }
 
-                        if (g_particleArray[index].s2[j + PART_ZVEL] > 0.0) {
-                            g_particleArray[index].s2[j + PART_ZVEL] += 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
-                        }
-                        else {
-                            g_particleArray[index].s2[j + PART_ZVEL] -= 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
-                        }
-                    }
-                }
-            }
+            //             if (g_particleArray[index].s2[j + PART_ZVEL] > 0.0) {
+            //                 g_particleArray[index].s2[j + PART_ZVEL] += 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+            //             }
+            //             else {
+            //                 g_particleArray[index].s2[j + PART_ZVEL] -= 0.5 + 0.4 * g_particleArray[index].randZ * g_particleArray[index].INIT_VEL;
+            //             }
+            //         }
+            //     }
+            // }
         }
         else {      // HARD reset: position AND velocity, BOTH state vectors:
             console.log("shift+r being pressed");
@@ -625,16 +624,16 @@ function key123(ev) {
 
     }
     else if (ev.keyCode == 70) { //F for change solver 
-        for (let index = 0; index < g_particleNum; index++) {
-            if (g_particleArray[index].solvType == 0) {
-                console.log("change to implicit solver");
-                g_particleArray[index].solvType = 1;
-            }
-            else {
-                console.log("change to explicit solver");
-                g_particleArray[index].solvType = 0;
-            }
-        }
+        // for (let index = 0; index < g_particleNum; index++) {
+        //     if (g_particleArray[index].solvType == 0) {
+        //         console.log("change to implicit solver");
+        //         g_particleArray[index].solvType = 1;
+        //     }
+        //     else {
+        //         console.log("change to explicit solver");
+        //         g_particleArray[index].solvType = 0;
+        //     }
+        // }
     }
 }
 
@@ -899,13 +898,14 @@ function myMouseDown(ev) {
     var x = (xp - canvas.width / 2) / (canvas.width / 2);
     var y = (yp - canvas.height / 2) / (canvas.height / 2);
 
-    // if (xp <= 500 && yp <= 600) { //dragging must be in correct place
-    //     // console.log("dragging",xp,yp )
-    // }
-    g_isDrag = true;
-    // g_isDrag = true;
+    // console.log(ev.srcElement.tagName)
+    if(ev.srcElement.tagName == 'CANVAS'){ //only drag if mouse is on canvas
+        g_isDrag = true;
+    }
+
     g_xMclik = x;
     g_yMclik = y;
+
 };
 
 var g_lamp0PosY, g_lamp0PosZ;
@@ -938,11 +938,23 @@ function myMouseMove(ev) {
 
     g_xMclik = x;
     g_yMclik = y;
-
-    if (g_isDrag) {
-        g_particleArray[SPRINGMASS].s1[PART_XPOS] += g_xMdragTot;
-        drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
+    let mouseThresh = 0.6;
+    if(g_xMdragTot > mouseThresh){
+        g_xMdragTot = mouseThresh;
     }
+    else if(g_xMdragTot < -1*mouseThresh){
+        g_xMdragTot = -1*mouseThresh;
+    }
+    if(g_yMdragTot > mouseThresh){
+        g_yMdragTot = mouseThresh;
+    }
+    else if(g_yMdragTot < -1*mouseThresh){
+        g_yMdragTot = -1*mouseThresh;
+    }
+    // if (g_isDrag) {
+    //     g_particleArray[SPRINGMASS].s1[PART_XPOS] += g_xMdragTot;
+    //     drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
+    // }
 };
 
 function myMouseUp(ev) {

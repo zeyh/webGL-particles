@@ -119,6 +119,18 @@ PartSys.prototype.initSand = function (count) {
     fTmp.partCount = -1;            // (negative value means ALL particles and IGNORE all other Cforcer members...)
     this.forceList.push(fTmp);      // append this 'gravity' force object to 
 
+    // fTmp = new CForcer();     
+    // fTmp.forceType = F_WIND;     
+    // fTmp.targFirst = 0;            
+    // fTmp.partCount = -1;           
+    // this.forceList.push(fTmp);  
+
+    fTmp = new CForcer();     
+    fTmp.forceType = F_DRAG;     
+    fTmp.targFirst = 0;            
+    fTmp.partCount = -1;           
+    this.forceList.push(fTmp);  
+
     var cTmp = new CLimit();
     cTmp.limitType = LIM_COLLISION;
     cTmp.partFirst = 0;
@@ -307,7 +319,7 @@ PartSys.prototype.initCloth = function (width, height, spacing) {
         this.s1[j + PART_XVEL] = 0.0;
         this.s1[j + PART_YVEL] = 0.0;
         this.s1[j + PART_ZVEL] = 0.0;
-        this.s1[j + PART_DIAM] = 10;
+        this.s1[j + PART_DIAM] = 8;
         this.s1[j + PART_MASS] = this.s1[j + PART_DIAM] / 1000;
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 10;
@@ -1051,6 +1063,7 @@ PartSys.prototype.applyForces = function (s, fList, currType) {
                         if(g_isDrag){
                             dx = g_xMdragTot;
                             dy = g_yMdragTot;
+
                         }
                         // console.log(dx, dy);
                         var j = m * PART_MAXVAR;  // state var array index for particle # m

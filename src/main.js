@@ -27,10 +27,9 @@ References: besides the inline links in index.html, the code is modified from
     Done: cylinder-base constraint
     Done: boid boundary handling & boid evasion
     Done: wind on cloth & fire + mouseDrag
-
+    Done: refine onscreen instruction & add title and remove useless keyboard
+    
     ? Doing[Tues]: more on sand
-    ? Doing[Tues]: refine onscreen instruction 
-    ? Doing[Tues]: remove useless term in dat.gui & useless keyboard response like R/f & console logs
 
     TODO more textures refer to grading sheet 
     TODO fluids
@@ -64,6 +63,7 @@ function reset() {
         }
         boidDropdown.setValue("Individual");
     };
+    clearDrag();
     resetSliders();
     initVBOs();
 }

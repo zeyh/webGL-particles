@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="utf-8" />
-        <title>Particles</title>
+        <title>Particle Garden</title>
         <link rel="preconnect" href="https://fonts.gstatic.com" />
         <link
             href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Crimson+Text:wght@400;700&family=Roboto+Mono:wght@400&display=swap"
@@ -16,6 +16,9 @@
         <canvas id="webgl" width="800" height="400">
             Please use a browser that supports "canvas"
         </canvas>
+        <div class="title">
+            <h1>Particle Garden</h1>
+        </div>
         <!-- span id ="center">·</span -->
         <div class="buttons">
             <div class="dropdown">
@@ -26,7 +29,7 @@
                 ></button>
                 <div id="myDropdown" class="dropdown-content"></div>
             </div>
-            <button id="showGrid" onclick="gridDisplay()">Show Plane</button>
+            <button id="showGrid" onclick="gridDisplay()">Hide Grid</button>
             <button id="showSphere" onclick="sphereDisplay()">
                 Show Sphere
             </button>
@@ -41,8 +44,8 @@
             <p class="instructions">
                 Press <strong>Shift</strong> to Change Viewing Angles
             </p>
-            <p class="instructions">Mouse Scroll to Zoom</p>
-            <p class="instructions">Press M to change texture</p>
+            <p class="instructions"><strong>Mouse Scroll</strong> to Zoom</p>
+            <p class="instructions"><strong>Mouse Drag</strong> to Create Wind</p>
         </div>
 
         <script src="lib/webgl-utils.js" type="text/javascript"></script>
