@@ -207,14 +207,14 @@ var params = {
     ClothHeight: 5,
     ClothSpacing: 0.2,
     ClothStreching: 3.10, //kStretch
-    ClothSheering: 0.1, //kSheer
-    ClothBending: 0.1,  //kBend
+    ClothSheering: 0.02, //kSheer
+    ClothBending: 0.02,  //kBend
     ClothRestLength: 0.10, //springEqualibrium
-    // ClothSpringConst: 500,
-    DragForce: 0.12, //K_drag
+    DragForce: 0.19, //K_drag
     FireMassDecay: 0.2,
     FireDiamDecay: 1.5,
     FireBlueDecay: 0.8,
+    SandSpreadRadius: 1.8,
 };
 var boidBounceTxt = {
     BoidBounceType: 'bounce1'
@@ -338,13 +338,6 @@ function setControlPanel() {
                 }
             }
         );
-        // gui.add(params, 'ClothSpringConst', 10, 600).onChange(
-        //     function (value) { //update findNeighbor criteria
-        //         for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
-        //             g_particleArray[CLOTH].forceList[i].K_spring = value;
-        //         }
-        //     }
-        // );
         gui.add(params, 'DragForce', 0.01, 1.00).onChange(
             function (value) { //update findNeighbor criteria
                 for (let i = 0; i < g_particleArray[CLOTH].forceList.length; i++) {
@@ -375,17 +368,15 @@ function setControlPanel() {
                 }
             }
         );
-        // guiArr_frustum = [guiBoundary, guiNeighbor, guiSep, guiAli, guiCoh, guiEva];
-        // disableGui(guiArr_frustum); //by default
-        // frustrumController.onChange(function (value) {
-        //     isFrustrum = value
-        //     if (!isFrustrum) {
-        //         disableGui(guiArr_frustum);
-        //     }
-        //     else {
-        //         enableGui(guiArr_frustum);
-        //     }
-        // });
+
+        gui.add(params, 'SandSpreadRadius', 1.0, 5).onChange(
+            function (value) { //update findNeighbor criteria
+                g_particleArray[SAND].CYLINDAR_RAD = value;
+                for (let i = 0; i < g_particleArray[SAND].limitList.length; i++) {
+                    g_particleArray[SAND].limitList[i].cylinderRad = value;
+                }
+            }
+        );
     }
     else {
         if (gui) {

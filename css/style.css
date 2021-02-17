@@ -4,7 +4,12 @@ body {
     height: 100%;
     margin: 0;
     overflow: hidden;
+    background-color: rgb(37, 37, 37);
     /* Hide scrollbars */
+}
+
+canvas{
+    cursor: pointer;
 }
 
 .buttons {
@@ -13,41 +18,16 @@ body {
     top: 4%;
 }
 
+
 .title{
-    color:white;
-    opacity:0.0;
-    position: absolute;
-    top:45%;
-    left: 4.3%;
-    font-size:20pt;
-    animation: blinkerTitle 4s;
+    color:rgb(192, 190, 190);
+    opacity:1;
+    margin-top:28%;
+    margin-left: 4.4%;
+    font-size:42pt;
+    font-family: 'Long Cang', cursive;
 }
-@keyframes blinkerTitle {
-    0% {
-        opacity: 0.2;
-    }
-    15% {
-        opacity: 1;
-    }
-    30% {
-        opacity: 0.4;
-    }
-    45% {
-        opacity: 0.9;
-    }
-    60% {
-        opacity: 0.2;
-    }
-    75% {
-        opacity: 0.6;
-    }
-    /* 80% {
-        opacity: 0.6;
-    } */
-    100% {
-        opacity: 0.0;
-    }
-}
+
 #center {
     position: absolute;
     top: 50%;
@@ -89,7 +69,7 @@ button:hover {
 
 .instructions {
     color: white;
-    opacity: 0.8;
+    opacity: 1;
     margin-left: 5%;
     font-family: "Comfortaa", cursive;
     font-weight: 300;
@@ -99,37 +79,35 @@ button:hover {
     position: relative;
     left: 0;
 }
+
 .general_info {
     color: white;
-    opacity: 0.8;
-    margin-right: 3%;
     font-family: "Comfortaa", cursive;
     float: right;
-    position: absolute;
-    bottom: 4%;
-    right: 1%;
+    margin-top:100pt;
+    margin-right: 3%;
     font-weight: 300;
-    animation: blinker 2s;
-    animation-delay: 4.2s;
+    animation: blinker 3s;
+    animation-delay: 0.2s; 
 }
 @keyframes blinker {
     0% {
-        opacity: 0.8;
+        opacity: 0.0;
     }
     20% {
-        opacity: 0.3;
+        opacity: 1;
     }
     40% {
-        opacity: 0.8;
+        opacity: 0.2;
     }
     60% {
-        opacity: 0.3;
+        opacity: 1;
     }
     80% {
-        opacity: 0.8;
+        opacity: 0.4;
     }
     100% {
-        opacity: 0.8;
+        opacity: 1;
     }
 }
 .general_info p {

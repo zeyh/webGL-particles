@@ -113,23 +113,16 @@ PartSys.prototype.initSand = function (count) {
     */
     // ! force-causing objects
     var fTmp = new CForcer();       // create a force-causing object, and
-    // * earth gravity for all particles:
     fTmp.forceType = F_GRAV_E;      // set it to earth gravity, and
     fTmp.targFirst = 0;             // set it to affect ALL particles:
     fTmp.partCount = -1;            // (negative value means ALL particles and IGNORE all other Cforcer members...)
     this.forceList.push(fTmp);      // append this 'gravity' force object to 
 
-    // fTmp = new CForcer();     
-    // fTmp.forceType = F_WIND;     
-    // fTmp.targFirst = 0;            
-    // fTmp.partCount = -1;           
-    // this.forceList.push(fTmp);  
-
-    fTmp = new CForcer();     
-    fTmp.forceType = F_DRAG;     
-    fTmp.targFirst = 0;            
-    fTmp.partCount = -1;           
-    this.forceList.push(fTmp);  
+    fTmp = new CForcer();
+    fTmp.forceType = F_WIND;
+    fTmp.targFirst = 0;
+    fTmp.partCount = -1;
+    this.forceList.push(fTmp);
 
     var cTmp = new CLimit();
     cTmp.limitType = LIM_COLLISION;
@@ -159,7 +152,7 @@ PartSys.prototype.initSand = function (count) {
     this.INIT_VEL = 0.15 * 60.0;
     this.runMode = 3;
     this.solvType = g_currSolverType;
-    this.CYLINDAR_RAD = 1.8;
+    this.CYLINDAR_RAD = cTmp.cylinderRad;
     //* initial conditions
     var j = 0;
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR) {
@@ -168,9 +161,9 @@ PartSys.prototype.initSand = function (count) {
         this.s1[j + PART_YPOS] = 0.5 + randn_bm();
         this.s1[j + PART_ZPOS] = this.CYLINDAR_RAD * randn_bm();
         this.s1[j + PART_WPOS] = 1.0;
-        this.s1[j + PART_R] = 0.3 + randn_bm();
-        this.s1[j + PART_G] = 0.3 + randn_bm();
-        this.s1[j + PART_B] = 0.4 + randn_bm();
+        this.s1[j + PART_R] = 0.6 + randn_bm()*0.6;
+        this.s1[j + PART_G] = 0.4 + randn_bm()*0.6;
+        this.s1[j + PART_B] = 0.2 + (randn_bm()-0.3);
         this.roundRand(); // * y'(0)
         this.s1[j + PART_XVEL] = 20 * (randn_bm() - 0.5);
         this.s1[j + PART_YVEL] = 2 * (randn_bm() - 0.5);
@@ -182,11 +175,16 @@ PartSys.prototype.initSand = function (count) {
         this.s2.set(this.s1);
     }
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
-    this.floorstate = new Int8Array(this.partCount);
-    for (let i = 0; i < this.floorstate.length; i++) {
-        this.floorstate[i] = -1;
-    }
+    this.floorstate = initVectorMinus1(this.partCount);
     this.accumulated = new Float32Array(this.partCount);
+}
+
+function initVectorMinus1(count) {
+    let vector = new Int8Array(count);
+    for (let i = 0; i < count; i++) {
+        vector[i] = -1;
+    }
+    return vector;
 }
 
 PartSys.prototype.findClothProps = function () {
@@ -405,9 +403,9 @@ PartSys.prototype.initBoid = function (count) {
         this.s1[j + PART_YPOS] = 0.0 + 1.0 * this.neighborRadius * this.randX;
         this.s1[j + PART_ZPOS] = 0.0 + 1.0 * this.neighborRadius * this.randZ;
         this.s1[j + PART_WPOS] = 1.0;
-        this.s1[j + PART_R] = 0.7 + Math.abs(this.randX*0.4);
-        this.s1[j + PART_G] = 0.7 + this.randY*0.4;
-        this.s1[j + PART_B] = 0.5 + this.randY*0.1;
+        this.s1[j + PART_R] = 0.7 + Math.abs(this.randX * 0.4);
+        this.s1[j + PART_G] = 0.7 + this.randY * 0.4;
+        this.s1[j + PART_B] = 0.5 + this.randY * 0.1;
         this.roundRand(); // * y'(0)
         this.s1[j + PART_XVEL] = this.INIT_VEL * (0.1 + 0.1 * this.randX);
         this.s1[j + PART_YVEL] = this.INIT_VEL * (0.0 + 0.03 * this.randY);
@@ -591,11 +589,6 @@ PartSys.prototype.initSpring = function (count) {
     fTmp.partCount = -1;
     this.forceList.push(fTmp);
 
-    // console.log("\t\t", this.forceList.length, "CForcer objects:");
-    // for (i = 0; i < this.forceList.length; i++) {
-    //     console.log("CForceList[", i, "]");
-    //     this.forceList[i].printMe();
-    // }
     // ! ode constants
     this.partCount = count;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR);
@@ -876,19 +869,20 @@ PartSys.prototype.applyForces = function (s, fList, currType) {
                     }
                 }
 
-                else if (Math.min.apply(Math, this.floorstate) < 0) {
+                else if (Math.min.apply(Math, this.floorstate) < 0 || steadySand == false) {
                     var j = m * PART_MAXVAR;  // state var array index for particle # m
                     for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
-                        // force from gravity == mass * gravConst * downDirection
                         s[j + PART_X_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
-                            fList[k].downDir.elements[0];
+                            fList[k].downDir.elements[0] * Math.abs(this.floorstate[m]);
                         s[j + PART_Y_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
-                            fList[k].downDir.elements[1];
+                            fList[k].downDir.elements[1] * Math.abs(this.floorstate[m]);
                         s[j + PART_Z_FTOT] += s[j + PART_MASS] * fList[k].gravConst *
-                            fList[k].downDir.elements[2];
+                            fList[k].downDir.elements[2] * Math.abs(this.floorstate[m]);
                     }
+                    globalThis.steadySand = false;
                 }
                 else { //should be steady system
+                    globalThis.steadySand = true;
                 }
                 break;
             case F_GRAV_P:    // planetary gravity between particle # e1 and e2.
@@ -900,35 +894,39 @@ PartSys.prototype.applyForces = function (s, fList, currType) {
                 let dx = 0; //(g_curMousePosX4Boid - canvas.width / 2) / canvas.width / 2;
                 let dy = 0; //(g_curMousePosY4Boid - canvas.height / 2) / canvas.height / 2;
                 let dz = 0;
-                if(g_isDrag){
+                if (g_isDrag) {
                     dx = g_xMdragTot;
                     dy = g_yMdragTot;
                 }
-                
-                if(currType == CLOTH){
+
+                if (currType == CLOTH) {
                     dx *= 0.5;
                     dy *= 0.5;
-                    // if(dx > 0){
-                    //     dx = Math.min(dx, 0.6);
-                    // }
-                    // else{
-                    //     dx = Math.max(dx, -0.6);
-                    // }
-                    // if(dy > 0){
-                    //     dy = Math.min(dy, 0.6);
-                    // }
-                    // else{
-                    //     dy = Math.max(dy, -0.6);
-                    // }
-                }   
-                if(currType == BOID){
+                }
+                if (currType == BOID) {
                     dx *= 10;
                     dy *= 10;
-                } 
-                for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
-                    s[j + PART_X_FTOT] += dx;
-                    s[j + PART_Y_FTOT] += dy;
-                    s[j + PART_Z_FTOT] += dz;
+                }
+                if (currType != SAND) {
+                    for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
+                        s[j + PART_X_FTOT] += dx;
+                        s[j + PART_Y_FTOT] += dy;
+                        s[j + PART_Z_FTOT] += dz;
+                    }
+                } else {
+                    if (g_isDrag) {
+                        //for sand
+                        for (; m < mmax; m++, j += PART_MAXVAR) { // for every part# from m to mmax-1,
+                            s[j + PART_X_FTOT] += 2000 * dx + 1 * (randn_bm());
+                            s[j + PART_Z_FTOT] -= 2000 * dy + 1 * (randn_bm());
+                            s[j + PART_XVEL] += 3 * (randn_bm() - 0.5);
+                            s[j + PART_ZVEL] -= 3 * (randn_bm() - 0.5);
+                        }
+                        steadySand = false;
+                        g_particleArray[SAND].floorstate = initVectorMinus1(g_particleArray[SAND].partCount);
+                        g_particleArray[SAND].accumulated = new Float32Array(g_particleArray[SAND].partCount);
+                        g_particleArray[SAND].calculateAccumulation();
+                    }
                 }
                 break;
             case F_BUBBLE:    // Constant inward force (bub_force)to a 3D centerpoint 
@@ -1063,7 +1061,7 @@ PartSys.prototype.applyForces = function (s, fList, currType) {
                     if (g_curMousePosX4Boid && g_curMousePosY4Boid) {
                         let dx = (g_curMousePosX4Boid - canvas.width / 2) / canvas.width / 2;
                         let dy = (g_curMousePosY4Boid - canvas.height / 2) / canvas.height / 2;
-                        if(g_isDrag){
+                        if (g_isDrag) {
                             dx = g_xMdragTot;
                             dy = g_yMdragTot;
 
@@ -1448,6 +1446,59 @@ function isReachFloor(floorstate, neighbors) {
     return reachFloor;
 }
 
+function within(x, y, thresh) {
+    // test if x is in (y-thresh, y+thresh)
+    if (thresh == undefined) {
+        thresh = PARTICLE_RAD/2;
+    }
+    if (x < y + thresh && x > y - thresh) {
+        return true;
+    }
+    return false;
+}
+
+function detectMaxLevel(s) {
+    // n^2 algorithm, for each particle, see how many is directly above or below 
+    globalThis.g_upperLim = 50;
+    let level = Math.log(s.length / PART_MAXVAR) * 3; //default, see if there's any chance to be accumulated higher
+    for (let i = 0; i < s.length / PART_MAXVAR; i++) {
+        let currLevel = 0;
+        let currX = s[i * PART_MAXVAR + PART_XPOS];
+        let currZ = s[i * PART_MAXVAR + PART_ZPOS];
+        for (let n = 0; n < s.length / PART_MAXVAR; n++) {
+            if (within(s[n * PART_MAXVAR + PART_XPOS], currX) && within(s[n * PART_MAXVAR + PART_ZPOS], currZ)) {
+                currLevel++;
+            }
+        }
+        level = Math.max(level, currLevel);
+    }
+    return level > g_upperLim ? g_upperLim : level;
+}
+
+const PARTICLE_RAD = 0.04;
+PartSys.prototype.calculateAccumulation = function () {
+    //neighbors pile up
+    let maxCount = detectMaxLevel(this.s2);
+    if (Math.min.apply(Math, this.floorstate) != 0) { //there exist -1 in the floorstate
+        for (let i = 0; i < this.partCount; i++) {
+            let steps2 = 0;
+            let neighbors = findNeighbors(this.s2, i, PARTICLE_RAD);
+            if (neighbors.length > 0) {
+                while (neighbors.length > 0 && steps2 < maxCount
+                    && (isReachFloor(this.floorstate, neighbors) || this.s2[i * PART_MAXVAR + PART_YPOS] < maxCount * PARTICLE_RAD)) {
+                    steps2++;
+                    this.s2[i * PART_MAXVAR + PART_YPOS] += PARTICLE_RAD;
+                    neighbors = findNeighbors(this.s2, i, PARTICLE_RAD);
+                    this.accumulated[i] = steps2 * PARTICLE_RAD * 0.5;
+                    this.floorstate[i] = 0;
+                }
+            } else if (isReachFloor(this.floorstate, neighbors)) {
+                this.floorstate[i] = 0;
+            }
+        }
+    }
+}
+
 PartSys.prototype.doConstraints = function () {
     /*
     accepts state variables s1 and s2 
@@ -1478,9 +1529,8 @@ PartSys.prototype.doConstraints = function () {
                 }
                 break;
             case LIM_COLLISION:
-                const PARTICLE_RAD = 0.04;
                 //neighbors pile up
-                let maxCount = Math.log(this.partCount) * 3;
+                let maxCount = detectMaxLevel(this.s2);
                 if (Math.min.apply(Math, this.floorstate) != 0) { //there exist -1 in the floorstate
                     for (let i = 0; i < this.partCount; i++) {
                         let steps1 = 0;
@@ -1500,11 +1550,12 @@ PartSys.prototype.doConstraints = function () {
                             // }
                             // let tmp = this.s2.map(a => ({...a}));
                             while (neighbors.length > 0 && steps2 < maxCount
-                                && (isReachFloor(this.floorstate, neighbors) || this.s2[i * PART_MAXVAR + PART_YPOS] < maxCount / 3 * PARTICLE_RAD)) {
+                                && (isReachFloor(this.floorstate, neighbors) || this.s2[i * PART_MAXVAR + PART_YPOS] < maxCount * PARTICLE_RAD)) {
                                 steps2++;
                                 this.s2[i * PART_MAXVAR + PART_YPOS] += PARTICLE_RAD;
                                 neighbors = findNeighbors(this.s2, i, PARTICLE_RAD);
                                 this.accumulated[i] = steps2 * PARTICLE_RAD * 0.5;
+                                this.floorstate[i] = 0;
                             }
                             // this.s2[i * PART_MAXVAR + PART_YPOS] = tmp.map(a => ({...a}));
                             // this.s2[i*PART_MAXVAR + PART_ZVEL] += 1*dz;
@@ -1525,10 +1576,11 @@ PartSys.prototype.doConstraints = function () {
                 for (let i = 0; i < this.partCount; i++) {
                     //cylinder wall constraint
                     if (Math.sqrt(Math.pow(this.s2[i * PART_MAXVAR + PART_XPOS], 2) + Math.pow(this.s2[i * PART_MAXVAR + PART_ZPOS], 2)) >= this.CYLINDAR_RAD) {
+                        let dist = eucDistIndv(0,0,0, this.s2[i * PART_MAXVAR + PART_XPOS], this.s2[i * PART_MAXVAR + PART_YPOS], this.s2[i * PART_MAXVAR + PART_ZPOS]);
                         this.s2[i * PART_MAXVAR + PART_XVEL] = 0;
                         this.s2[i * PART_MAXVAR + PART_ZVEL] = 0;
-                        this.s2[i * PART_MAXVAR + PART_XPOS] = this.s1[i * PART_MAXVAR + PART_XPOS];
-                        this.s2[i * PART_MAXVAR + PART_ZPOS] = this.s1[i * PART_MAXVAR + PART_ZPOS];
+                        this.s2[i * PART_MAXVAR + PART_XPOS] = this.s1[i * PART_MAXVAR + PART_XPOS] * Math.max(curLim.cylinderRad / dist, 0.5);
+                        this.s2[i * PART_MAXVAR + PART_ZPOS] = this.s1[i * PART_MAXVAR + PART_ZPOS] * Math.max(curLim.cylinderRad  / dist, 0.5);
                         this.s2[i * PART_MAXVAR + PART_X_FTOT] = 0;
                         this.s2[i * PART_MAXVAR + PART_Z_FTOT] = 0;
                     }
@@ -1593,7 +1645,7 @@ PartSys.prototype.doConstraints = function () {
                     this.s2[j + PART_AGE] -= 1;     // decrement lifetime.
                     let dx = 0;
                     let dy = 0;
-                    if(g_isDrag){
+                    if (g_isDrag) {
                         dx = g_xMdragTot;
                         dy = g_yMdragTot;
                     }
@@ -1604,8 +1656,8 @@ PartSys.prototype.doConstraints = function () {
                         this.s2[j + PART_ZPOS] = -0.0 + 0.1 * this.randZ;
                         this.s2[j + PART_WPOS] = 1.0;
                         this.roundRand();
-                        this.s2[j + PART_XVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randX + 0.5*dx);
-                        this.s2[j + PART_YVEL] = this.INIT_VEL * (0.3 + 0.3 * this.randY + 0.5*dy);
+                        this.s2[j + PART_XVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randX + 0.5 * dx);
+                        this.s2[j + PART_YVEL] = this.INIT_VEL * (0.3 + 0.3 * this.randY + 0.5 * dy);
                         this.s2[j + PART_ZVEL] = this.INIT_VEL * (0.0 + 0.05 * this.randZ);
                         this.s2[j + PART_MASS] = 1.0;      // mass, in kg.
                         this.s2[j + PART_DIAM] = 40 * Math.random(); // on-screen diameter, in pixels

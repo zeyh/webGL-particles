@@ -21,14 +21,14 @@ References: besides the inline links in index.html, the code is modified from
     Done: 3D Explicit & implicit solvers*5
     Done: mass-spring like linked systems with interactions (cloth-like)
     Done: boid constraint+control
-    Done:  limit particle in shapes[box, sphere]
+    Done: limit particle in shapes[box, sphere]
     Done: fire🔥 
     Done: sand init
     Done: cylinder-base constraint
     Done: boid boundary handling & boid evasion
     Done: wind on cloth & fire + mouseDrag
     Done: refine onscreen instruction & add title and remove useless keyboard
-    
+
     ? Doing[Tues]: more on sand
 
     TODO more textures refer to grading sheet 
@@ -131,11 +131,11 @@ function initVBOs(currScheme) {
     particle5.initShader(particleVert, particleFrag_square);
     g_particleArray[CLOTH] = particle5;
 
-    globalThis.TORNADO = 6; //Remember to update g_particleNum
+    globalThis.SAND = 6; //Remember to update g_particleNum
     var particle6 = new PartSys();
     particle6.initSand(600);  
     particle6.initShader(particleVert, particleFrag);
-    g_particleArray[TORNADO] = particle6;
+    g_particleArray[SAND] = particle6;
 }
 function main() {
     console.log("I'm in main.js right now...");
@@ -162,11 +162,11 @@ function main() {
     };
     setControlPanel();
     // Set the clear color and enable the depth test
-    gl.clearColor(0.15, 0.15, 0.15, 1.0);
-    // gl.clearColor(0.0, 0.0, 0.0, 0.0);
+    // gl.clearColor(0.15, 0.15, 0.15, 1.0);
+    gl.clearColor(0.0, 0.0, 0.0, 0.0);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);// Enable alpha blending
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Set blending function conflict with shadow...?
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); 
     g_modelMatrix = new Matrix4();
 
     g_shadingScheme = { //[plane, cube, cube2, sphere, sphere2, cube3] 

@@ -163,6 +163,8 @@ function CLimit() {
   this.radius = 1.0;        // hard/solid particle size imposed by by LIM_RADIUS
 
   this.floorPos = 0.0;
+
+  this.cylinderRad = params.SandSpreadRadius;
 }
 
 CLimit.prototype.printMe = function(opt_src) {

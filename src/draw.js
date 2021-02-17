@@ -50,8 +50,8 @@ function drawAll([grid, plane, sphere_test, sphere, cube]) {
         cube.draw(g_modelMatrix, g_viewProjMatrix);
         g_modelMatrix = popMatrix();
         pushMatrix(g_modelMatrix);
-        g_modelMatrix.scale(0.02, 1.05, 0.02);
-        g_modelMatrix.translate(-7, -0.945, 0);
+        g_modelMatrix.scale(0.05, 1.05, 0.05);
+        g_modelMatrix.translate(-3.8, -0.945, 0);
         cube.switchToMe();
         cube.draw(g_modelMatrix, g_viewProjMatrix);
         g_modelMatrix = popMatrix();
@@ -132,10 +132,10 @@ function drawAll([grid, plane, sphere_test, sphere, cube]) {
     }
     g_modelMatrix = popMatrix();
 
-    // particle TORNADO
+    // particle SAND
     pushMatrix(g_modelMatrix);
-    g_modelMatrix.setTranslate(0.5, 0.0, 2.5);
-    drawParticle(TORNADO, g_modelMatrix, g_viewProjMatrix);
+    g_modelMatrix.setTranslate(1.2, 0.0, 4.5);
+    drawParticle(SAND, g_modelMatrix, g_viewProjMatrix);
     g_modelMatrix = popMatrix();
 
     // particle testing bouncy ball

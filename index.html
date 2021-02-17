@@ -5,7 +5,7 @@
         <title>Particle Garden</title>
         <link rel="preconnect" href="https://fonts.gstatic.com" />
         <link
-            href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Crimson+Text:wght@400;700&family=Roboto+Mono:wght@400&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&family=Crimson+Text:wght@400;700&family=Roboto+Mono:wght@400&family=Long+Cang&display=swap"
             rel="stylesheet"
         />
         <link href="css/style.css" rel="stylesheet" />
@@ -13,12 +13,12 @@
     </head>
 
     <body onload="main()">
-        <canvas id="webgl" width="800" height="400">
+        <canvas id="webgl" width="800" height="400" style="position: absolute">
             Please use a browser that supports "canvas"
         </canvas>
-        <div class="title">
-            <h1>Particle Garden</h1>
-        </div>
+
+        <p class="title">Particle Garden</p>
+
         <!-- span id ="center">·</span -->
         <div class="buttons">
             <div class="dropdown">
@@ -45,7 +45,9 @@
                 Press <strong>Shift</strong> to Change Viewing Angles
             </p>
             <p class="instructions"><strong>Mouse Scroll</strong> to Zoom</p>
-            <p class="instructions"><strong>Mouse Drag</strong> to Create Wind</p>
+            <p class="instructions">
+                <strong>Mouse Drag</strong> to Create Wind
+            </p>
         </div>
 
         <script src="lib/webgl-utils.js" type="text/javascript"></script>
