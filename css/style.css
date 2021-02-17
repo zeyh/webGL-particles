@@ -8,7 +8,7 @@ body {
     /* Hide scrollbars */
 }
 
-canvas{
+canvas {
     cursor: pointer;
 }
 
@@ -18,14 +18,19 @@ canvas{
     top: 4%;
 }
 
-
-.title{
-    color:rgb(192, 190, 190);
-    opacity:1;
-    margin-top:28%;
+.title {
+    color: rgb(192, 190, 190);
+    opacity: 1;
+    margin-top: 28%;
     margin-left: 4.4%;
-    font-size:42pt;
-    font-family: 'Long Cang', cursive;
+    font-size: 42pt;
+    font-family: "Long Cang", cursive;
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
+    text-decoration: underline;
+    text-decoration-style: dotted;
 }
 
 #center {
@@ -57,8 +62,8 @@ button:hover {
     text-shadow: 3px 3px 3px rgb(211, 210, 210);
 }
 
-#reset{
-    color:rgb(248, 145, 145);
+#reset {
+    color: rgb(248, 145, 145);
     border-color: rgb(248, 145, 145);
 }
 #reset:hover {
@@ -78,21 +83,26 @@ button:hover {
     float: right;
     position: relative;
     left: 0;
+
 }
 
 .general_info {
     color: white;
     font-family: "Comfortaa", cursive;
     float: right;
-    margin-top:100pt;
+    margin-top: 100pt;
     margin-right: 3%;
     font-weight: 300;
     animation: blinker 3s;
-    animation-delay: 0.2s; 
+    animation-delay: 0.2s;
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
 }
 @keyframes blinker {
     0% {
-        opacity: 0.0;
+        opacity: 0;
     }
     20% {
         opacity: 1;

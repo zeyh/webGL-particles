@@ -1,5 +1,8 @@
 "use strict"
 
+/**
+ * @param {int} index of particles in g_particleArray from main.js
+ */
 function drawParticle(index, g_modelMatrix, g_viewProjMatrix) {
     if (g_particleArray[index].runMode > 1) { // 0=reset; 1= pause; 2=step; 3=run
         if (g_particleArray[index].runMode == 2) {
@@ -9,7 +12,6 @@ function drawParticle(index, g_modelMatrix, g_viewProjMatrix) {
         g_particleArray[index].dotFinder(g_particleArray[index].s1dot, g_particleArray[index].s1); // find time-derivative s1dot from s1;
         g_particleArray[index].switchToMe();
         g_particleArray[index].render(g_modelMatrix, g_viewProjMatrix);   // transfer current state to VBO, set uniforms, draw it!
-        // console.log(JSON.parse(JSON.stringify(g_particleArray[index].s1)));
         g_particleArray[index].solver();         // find s2 from s1 & related states.
         g_particleArray[index].doConstraints();  // Apply all constraints.  s2 is ready!
         g_particleArray[index].swap();           // Make s2 the new current state
@@ -20,23 +22,11 @@ function drawParticle(index, g_modelMatrix, g_viewProjMatrix) {
     }
 }
 
+/**
+ * @param {array} array of vbo, MUST Match the g_vboArray in main.js
+ */
 function drawAll([grid, plane, sphere_test, sphere, cube]) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);    // Clear color and depth buffer
-
-    // particle BOUNCYBALL
-    // pushMatrix(g_modelMatrix);
-    // g_modelMatrix.setTranslate(1, 0.4, 1);
-    // drawParticle(BOUNCYBALL, g_modelMatrix, g_viewProjMatrix);
-    // g_modelMatrix = popMatrix();
-    // pushMatrix(g_modelMatrix);
-
-    // particle SPRINGMASS
-    // pushMatrix(g_modelMatrix);
-    // g_modelMatrix.setTranslate(-1, -0.5, 1);
-    // drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
-    // g_modelMatrix = popMatrix();
-    // pushMatrix(g_modelMatrix);
-
 
     // cloth
     pushMatrix(g_modelMatrix);
@@ -70,12 +60,7 @@ function drawAll([grid, plane, sphere_test, sphere, cube]) {
     g_modelMatrix.setTranslate(-0.6, 0.4, 1.48);
     drawParticle(FIRE, g_modelMatrix, g_viewProjMatrix);
     if (!hideSphere) {
-        // pushMatrix(g_modelMatrix);
-        // g_modelMatrix.scale(0.18, 0.02, 0.02);
-        // g_modelMatrix.translate(0.0, -45, 0);
-        // cube.switchToMe();
-        // cube.draw(g_modelMatrix, g_viewProjMatrix);
-        // g_modelMatrix = popMatrix();
+        // draw woods under fire
         pushMatrix(g_modelMatrix);
         g_modelMatrix.setTranslate(-0.7, -0.5, 1.5);
         g_modelMatrix.rotate(30, 0, 0, 1);
@@ -84,7 +69,7 @@ function drawAll([grid, plane, sphere_test, sphere, cube]) {
         cube.switchToMe();
         cube.draw(g_modelMatrix, g_viewProjMatrix);
         g_modelMatrix = popMatrix();
-        
+
         pushMatrix(g_modelMatrix);
         g_modelMatrix.setTranslate(-0.7, -0.5, 1.5);
         g_modelMatrix.rotate(30, 0, 0, 1);
@@ -93,7 +78,7 @@ function drawAll([grid, plane, sphere_test, sphere, cube]) {
         cube.switchToMe();
         cube.draw(g_modelMatrix, g_viewProjMatrix);
         g_modelMatrix = popMatrix();
-       
+
         pushMatrix(g_modelMatrix);
         g_modelMatrix.setTranslate(-0.5, -0.5, 1.5);
         g_modelMatrix.rotate(-30, 0, 0, 1);
@@ -102,7 +87,7 @@ function drawAll([grid, plane, sphere_test, sphere, cube]) {
         cube.switchToMe();
         cube.draw(g_modelMatrix, g_viewProjMatrix);
         g_modelMatrix = popMatrix();
-        
+
         pushMatrix(g_modelMatrix);
         g_modelMatrix.setTranslate(-0.5, -0.5, 1.5);
         g_modelMatrix.rotate(-30, 0, 0, 1);
@@ -111,7 +96,7 @@ function drawAll([grid, plane, sphere_test, sphere, cube]) {
         cube.switchToMe();
         cube.draw(g_modelMatrix, g_viewProjMatrix);
         g_modelMatrix = popMatrix();
-        
+
         pushMatrix(g_modelMatrix);
         g_modelMatrix.setTranslate(-0.6, -0.5, 1.4);
         g_modelMatrix.rotate(60, 0, 0, 1);
@@ -138,13 +123,6 @@ function drawAll([grid, plane, sphere_test, sphere, cube]) {
     drawParticle(SAND, g_modelMatrix, g_viewProjMatrix);
     g_modelMatrix = popMatrix();
 
-    // particle testing bouncy ball
-    // pushMatrix(g_modelMatrix);
-    // g_modelMatrix.setTranslate(-1, 0.4, 1);
-    // drawParticle(TEST, g_modelMatrix, g_viewProjMatrix);
-    // g_modelMatrix = popMatrix();
-    // pushMatrix(g_modelMatrix);
-
 
     //draw draggable light source on sphere
     if (hideSphere) {
@@ -156,7 +134,6 @@ function drawAll([grid, plane, sphere_test, sphere, cube]) {
         sphere_test.draw(g_modelMatrix, g_viewProjMatrix);
         g_modelMatrix = popMatrix();
     }
-
 
     //draw grid
     if (!hideGrid) {
@@ -176,5 +153,27 @@ function drawAll([grid, plane, sphere_test, sphere, cube]) {
         // plane.draw(g_modelMatrix, g_viewProjMatrix);
         // g_modelMatrix = popMatrix();
     }
+
+    // particle testing bouncy ball
+    // pushMatrix(g_modelMatrix);
+    // g_modelMatrix.setTranslate(-1, 0.4, 1);
+    // drawParticle(TEST, g_modelMatrix, g_viewProjMatrix);
+    // g_modelMatrix = popMatrix();
+    // pushMatrix(g_modelMatrix);
+
+    // particle BOUNCYBALL
+    // pushMatrix(g_modelMatrix);
+    // g_modelMatrix.setTranslate(1, 0.4, 1);
+    // drawParticle(BOUNCYBALL, g_modelMatrix, g_viewProjMatrix);
+    // g_modelMatrix = popMatrix();
+    // pushMatrix(g_modelMatrix);
+
+    // particle SPRINGMASS
+    // pushMatrix(g_modelMatrix);
+    // g_modelMatrix.setTranslate(-1, -0.5, 1);
+    // drawParticle(SPRINGMASS, g_modelMatrix, g_viewProjMatrix);
+    // g_modelMatrix = popMatrix();
+    // pushMatrix(g_modelMatrix);
+
 
 }

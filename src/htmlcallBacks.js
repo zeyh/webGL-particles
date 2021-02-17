@@ -207,10 +207,10 @@ var params = {
     ClothHeight: 5,
     ClothSpacing: 0.2,
     ClothStreching: 3.10, //kStretch
-    ClothSheering: 0.02, //kSheer
-    ClothBending: 0.02,  //kBend
+    ClothSheering: 0.01, //kSheer
+    ClothBending: 0.01,  //kBend
     ClothRestLength: 0.10, //springEqualibrium
-    DragForce: 0.19, //K_drag
+    DragForce: 0.15, //K_drag
     FireMassDecay: 0.2,
     FireDiamDecay: 1.5,
     FireBlueDecay: 0.8,
@@ -426,9 +426,13 @@ function gridDisplay() {
         //start
         hideGrid = false;
         document.querySelector('#showGrid').textContent = 'Hide Grid';
+        document.querySelector('.title').style.textDecoration = 'underline';
+        document.querySelector('.title').style.textDecorationStyle = 'dotted';
+
     } else {
         hideGrid = true;
         document.querySelector('#showGrid').textContent = 'Show Grid';
+        document.querySelector('.title').style.textDecoration = 'none';
     }
 }
 var hideSphere = false;

@@ -1,5 +1,5 @@
 /*
-Jan 24, 2021
+Feb 16, 2021
 References: besides the inline links in index.html, the code is modified from 
     [Textbook] Physics-based animations...
     [Canvas Starter Code] for CS351-2
@@ -28,8 +28,7 @@ References: besides the inline links in index.html, the code is modified from
     Done: boid boundary handling & boid evasion
     Done: wind on cloth & fire + mouseDrag
     Done: refine onscreen instruction & add title and remove useless keyboard
-
-    ? Doing[Tues]: more on sand
+    Done: sand control
 
     TODO more textures refer to grading sheet 
     TODO fluids
@@ -56,6 +55,9 @@ var g_timeStepMax = g_timeStep;
 var g_particleNum = 7;
 var g_particleArray = [];
 
+/**
+ * reset all particles and dat.gui value to default
+ */
 function reset() {
     var resetSliders = function () {
         for (var i = 0; i < gui.__controllers.length; i++) {
@@ -77,7 +79,9 @@ function colorReset() {
     }
 }
 
-
+/**
+ * init all vbos
+ */
 function initVBOs(currScheme) {
     if (!currScheme) {
         currScheme = g_shadingScheme[0];
@@ -138,7 +142,7 @@ function initVBOs(currScheme) {
     g_particleArray[SAND] = particle6;
 }
 function main() {
-    console.log("I'm in main.js right now...");
+    console.log("hello from main.js");
 
     canvas = document.getElementById('webgl');
     gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
@@ -161,6 +165,7 @@ function main() {
         materialKeyPress(ev);
     };
     setControlPanel();
+
     // Set the clear color and enable the depth test
     // gl.clearColor(0.15, 0.15, 0.15, 1.0);
     gl.clearColor(0.0, 0.0, 0.0, 0.0);
@@ -189,7 +194,6 @@ function main() {
         g_viewProjMatrix.setPerspective(30.0, aspectRatio, 1, 100);
         g_viewProjMatrix.lookAt(g_EyeX, g_EyeY, g_EyeZ, g_LookX, g_LookY, g_LookZ, 0, 1, 0); //center/look-at point
         g_viewProjMatrix.scale(0.4 * g_viewScale, 0.4 * g_viewScale, 0.4 * g_viewScale); //scale everything
-
 
         // ! animation
         currentAngle = animate(currentAngle);
